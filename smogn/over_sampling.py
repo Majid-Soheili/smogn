@@ -8,6 +8,7 @@ from tqdm import tqdm
 from smogn.box_plot_stats import box_plot_stats
 from smogn.dist_metrics import euclidean_dist, heom_dist, overlap_dist
 
+
 ## generate synthetic observations
 def over_sampling(
     
@@ -158,11 +159,11 @@ def over_sampling(
     
     ## calculate distance between observations based on data types
     ## store results over null distance matrix of n x n
-    dist_matrix = np.ndarray(shape = (n, n))
+    dist_matrix = np.zeros(shape=(n, n))
     
     for i in tqdm(range(n), ascii = True, desc = "dist_matrix"):
-        for j in range(n):
-            
+        for j in range(i+1, n):
+
             ## utilize euclidean distance given that 
             ## data is all numeric / continuous
             if feat_count_nom == 0:
@@ -198,7 +199,8 @@ def over_sampling(
                     b = data_nom.iloc[j],
                     d = feat_count_nom
                 )
-    
+            dist_matrix[j][i] = dist_matrix[i][j]
+
     ## determine indicies of k nearest neighbors
     ## and convert knn index list to matrix
     knn_index = [None] * n
