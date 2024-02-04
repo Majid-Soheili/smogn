@@ -7,7 +7,7 @@ setup(
     description = 'A Python implementation of Synthetic Minority Over-Sampling Technique for Regression with Gaussian Noise (SMOGN)',
     long_description = open('README.md').read(),
     long_description_content_type = "text/markdown",
-    author = 'Nick Kunz',
+    author = 'Nick Kunz, Majid Soheili',
     author_email = 'nick.kunz@columbia.edu',
     url = 'https://github.com/nickkunz/smogn',
     classifiers = [
