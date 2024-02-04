@@ -13,6 +13,7 @@ def smoter(
     ## main arguments / inputs
     data,                     ## training set (pandas dataframe)
     y,                        ## response variable y by name (string)
+    nom_features = None,      ## nominal features (list of strings)
     k = 5,                    ## num of neighs for over-sampling (pos int)
     pert = 0.02,              ## perturbation / noise percentage (pos real)
     samp_method = "balance",  ## over / under sampling ("balance" or extreme")
