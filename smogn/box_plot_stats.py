@@ -51,9 +51,9 @@ def box_plot_stats(
     x = np.array(x)
     
     ## determine median, lower ‘hinge’, upper ‘hinge’
-    median = np.quantile(a = x, q = 0.50, interpolation = "midpoint")
-    first_quart = np.quantile(a = x, q = 0.25, interpolation = "midpoint")
-    third_quart = np.quantile(a = x, q = 0.75, interpolation = "midpoint")
+    median = np.quantile(a = x, q = 0.50, method = "midpoint")
+    first_quart = np.quantile(a = x, q = 0.25, method = "midpoint")
+    third_quart = np.quantile(a = x, q = 0.75, method = "midpoint")
     
     ## calculate inter quartile range
     intr_quart_rng = third_quart - first_quart
