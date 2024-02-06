@@ -143,12 +143,19 @@ def over_sampling(
     ## (includes label encoded features)
     feat_ranges = list(np.repeat(1, d))
 
-    if len(feat_list_nom) > 0:
-        for j in feat_list_num:
+    #feature range shold be 1 if the feature is nominal else max - min
+    for j in range(d):
+        if j in feat_list_nom:
+            feat_ranges[j] = 1
+        else:
             feat_ranges[j] = max(data.iloc[:, j]) - min(data.iloc[:, j])
-    else:
-        for j in range(d):
-            feat_ranges[j] = max(data.iloc[:, j]) - min(data.iloc[:, j])
+
+    #if len(feat_list_nom) > 0:
+    #    for j in feat_list_num:
+    #        feat_ranges[j] = max(data.iloc[:, j]) - min(data.iloc[:, j])
+    #else:
+    #   for j in range(d):
+    #        feat_ranges[j] = max(data.iloc[:, j]) - min(data.iloc[:, j])
 
     ## subset feature ranges to include only numeric features
     ## (excludes label encoded features)
@@ -165,46 +172,81 @@ def over_sampling(
     ## calculate distance between observations based on data types
     ## store results over null distance matrix of n x n
     dist_matrix = np.zeros(shape=(n, n))
+    if feat_count_nom > 0:
 
-    for i in tqdm(range(n), ascii=True, desc="dist_matrix"):
-        for j in range(i + 1, n):
+        diff = data[:, np.newaxis, :] - data[np.newaxis, :, :]
+        # Divide the differences by 'ranges_num'
+        diff /= feat_ranges
 
-            ## utilize euclidean distance given that 
-            ## data is all numeric / continuous
-            if feat_count_nom == 0:
-                dist_matrix[i][j] = euclidean_dist(
-                    a=data_num.iloc[i],
-                    b=data_num.iloc[j],
-                    d=feat_count_num
-                )
+        # For nominal indices, replace all non-zero values with 1
+        diff[:, :, feat_list_num] = np.where(diff[:,:, feat_list_num] != 0, 1, 0)
 
-            ## utilize heom distance given that 
-            ## data contains both numeric / continuous 
-            ## and nominal / categorical
-            if feat_count_nom > 0 and feat_count_num > 0:
-                dist_matrix[i][j] = heom_dist(
+        # Square the differences
+        diff **= 2
 
-                    ## numeric inputs
-                    a_num=data_num.iloc[i],
-                    b_num=data_num.iloc[j],
-                    d_num=feat_count_num,
-                    ranges_num=feat_ranges_num,
+        # Sum the squared differences along the last axis
+        dist_num = np.sum(diff, axis=-1)
 
-                    ## nominal inputs
-                    a_nom=data_nom.iloc[i],
-                    b_nom=data_nom.iloc[j],
-                    d_nom=feat_count_nom
-                )
+        # Take the square root of the sum
+        dist_num = np.sqrt(dist_num)
+        dist_matrix = dist_num
+#
+#    for i in tqdm(range(n), ascii=True, desc="dist_matrix"):
+    #    for j in range(i + 1, n):
+#
+    #        ## utilize euclidean distance given that
+    #        ## data is all numeric / continuous
+    #        if feat_count_nom == 0:
+    #            dist_matrix[i][j] = euclidean_dist(
+    #                a=data_num.iloc[i],
+    #                b=data_num.iloc[j],
+    #                d=feat_count_num
+    #            )#
 
+    #        ## utilize heom distance given that
+    #        ## data contains both numeric / continuous
+    #        ## and nominal / categorical
+    #        if feat_count_nom > 0 and feat_count_num > 0:#
+
+    #            diff = data[:, np.newaxis, :] - data[np.newaxis, :, :]
+    #            # Divide the differences by 'ranges_num'
+    #            diff /= feat_ranges
+#
+                # For nominal indices, replace all non-zero values with 1
+    #            diff[:, :, feat_list_num] = np.where(diff[:,:, feat_list_num] != 0, 1, 0)
+
+                # Square the differences
+#                diff **= 2
+#
+     #           # Sum the squared differences along the last axis
+     #           dist_num = np.sum(diff, axis=-1)
+#
+                # Take the square root of the sum
+     #           dist_num = np.sqrt(dist_num)
+ #               dist_matrix = dist_num
+      #          dist_matrix[i][j] = heom_dist(
+#
+ ##                   ## numeric inputs
+ #                   a_num=data_num.iloc[i],
+      #              b_num=data_num.iloc[j],
+  #    #              d_num=feat_count_num,
+ #                   ranges_num=feat_ranges_num,
+#
+  #                  ## nominal inputs
+       #             a_nom=data_nom.iloc[i],
+   #                 b_nom=data_nom.iloc[j],
+    #                d_nom=feat_count_nom
+#                )
+#
             ## utilize hamming distance given that 
             ## data is all nominal / categorical
-            if feat_count_num == 0:
-                dist_matrix[i][j] = overlap_dist(
-                    a=data_nom.iloc[i],
-                    b=data_nom.iloc[j],
-                    d=feat_count_nom
-                )
-            dist_matrix[j][i] = dist_matrix[i][j]
+#            if feat_count_num == 0:
+#                dist_matrix[i][j] = overlap_dist(
+#                    a=data_nom.iloc[i],
+#                    b=data_nom.iloc[j],
+#                    d=feat_count_nom
+#                )
+#            dist_matrix[j][i] = dist_matrix[i][j]
 
     ## determine indicies of k nearest neighbors
     ## and convert knn index list to matrix
