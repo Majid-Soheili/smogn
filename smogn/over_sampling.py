@@ -121,14 +121,17 @@ def over_sampling(
     ## label encode nominal / categorical features
     ## (strictly label encode, not one hot encode)
 
+    mapping_dict = {}
     feat_list_nom = []
     nom_dtypes = ["object", "bool", "datetime64", "category"]
     for j in range(d):
         if data.dtypes[j] in nom_dtypes:
             feat_list_nom.append(j)
-            if data.dtypes[j] != "category":
-                data.iloc[:, j] = pd.Categorical(pd.factorize(data.iloc[:, j])[0])
+            codes, uniques = pd.factorize(data.iloc[:, j])
+            data.iloc[:, j] = pd.Categorical(codes)
+            mapping_dict[j] = dict(zip(range(len(uniques)), uniques))
 
+    print(mapping_dict)
     data = data.apply(pd.to_numeric)
 
     ## create numeric feature list
@@ -570,11 +573,13 @@ def over_sampling(
 
     ## replace label encoded values with original values
     for j in feat_list_nom:
-        code_list = data.iloc[:, j].unique()
-        cat_list = data_var.iloc[:, j].unique()
+        #code_list = data.iloc[:, j].unique()
+        #cat_list = data_var.iloc[:, j].unique()
 
-        for x in code_list:
-            data_new.iloc[:, j] = data_new.iloc[:, j].replace(x, cat_list[x])
+        #for x in code_list:
+        #    data_new.iloc[:, j] = data_new.iloc[:, j].replace(x, cat_list[x])
+        mapping = mapping_dict[j]
+        data_new.iloc[:, j] = data_new.iloc[:, j].map(mapping)
 
     ## reintroduce constant features previously removed
     if len(feat_const) > 0:
