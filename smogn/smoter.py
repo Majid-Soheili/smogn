@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 
+
 ## load dependencies - internal
 from smogn.phi import phi
 from smogn.phi_ctrl_pts import phi_ctrl_pts
@@ -286,8 +287,28 @@ def smoter(
         data_new = data_new[data_new.columns[cols]]
     
     ## restore original data types
+    #for j in range(d):
+    #    data_new.iloc[:, j] = data_new.iloc[:, j].astype(feat_dtypes_orig[j])
+    # I don't know why the above code is not working
+    # Indeed I tried to change datatupe of the columns in the data_new in different ways, but it didn't work
+    # Thus I decided to change the code in the following
+    # In thr following code I define a new and add the columns with original data types to the new data frame
+
+    result_df = pd.DataFrame()
+
     for j in range(d):
-        data_new.iloc[:, j] = data_new.iloc[:, j].astype(feat_dtypes_orig[j])
-    
+            dtype_orig = feat_dtypes_orig[j]
+            column_name = data_new.columns[j]
+            column = data_new[column_name]
+
+            if dtype_orig in [np.int64, pd.Int64Dtype()]:
+                column = column.round()
+
+            column = column.astype(dtype_orig)
+            data_new.loc[:, column_name] = column
+
+            result_df = pd.concat([result_df, column], axis=1)
+
     ## return modified training set
-    return data_new
+    ## return data_new
+    return result_df
