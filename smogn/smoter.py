@@ -21,6 +21,7 @@ def smoter(
     drop_na_col = True,       ## auto drop columns with nan's (bool)
     drop_na_row = True,       ## auto drop rows with nan's (bool)
     replace = False,          ## sampling replacement (bool)
+    nom_features = None,      ## nominal features (list of strings)
     seed = None,              ## seed for random sampling (pos int or None)
     
     ## phi relevance function arguments / inputs
@@ -300,6 +301,8 @@ def smoter(
             dtype_orig = feat_dtypes_orig[j]
             column_name = data_new.columns[j]
             column = data_new[column_name]
+            if column_name in nom_features:
+                dtype_orig = 'int64'
 
             if dtype_orig in [np.int64, pd.Int64Dtype()]:
                 column = column.round()
