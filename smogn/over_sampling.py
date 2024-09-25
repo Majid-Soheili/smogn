@@ -581,8 +581,9 @@ def over_sampling(
 
         #for x in code_list:
         #    data_new.iloc[:, j] = data_new.iloc[:, j].replace(x, cat_list[x])
+        # The categorical feature should be Integer not decimal
         mapping = mapping_dict[j]
-        data_new.iloc[:, j] = data_new.iloc[:, j].map(mapping)
+        data_new.iloc[:, j] = data_new.iloc[:, j].map(mapping).astype('int64')
 
     ## reintroduce constant features previously removed
     if len(feat_const) > 0:
