@@ -19,7 +19,8 @@ def over_sampling(
         pert,  ## perturbation / noise percentage
         k,  ## num of neighs for over-sampling
         nom_features=None,  ## list of nominal features
-        seed=None  ## random seed for sampling (pos int or None)
+        seed=None,  ## random seed for sampling (pos int or None)
+        verbose=True  ## print statements
 ):
     """
     generates synthetic observations and is the primary function underlying the
@@ -329,7 +330,7 @@ def over_sampling(
     synth_matrix = np.ndarray(shape=((x_synth * n + n_synth), d))
 
     if x_synth > 0:
-        for i in tqdm(range(n), ascii=True, desc="synth_matrix"):
+        for i in tqdm(range(n), ascii=True, desc="synth_matrix", disable=not verbose):
 
             ## determine which cases are 'safe' to interpolate
             safe_list = np.where(
@@ -447,7 +448,7 @@ def over_sampling(
     if n_synth > 0:
         count = 0
 
-        for i in tqdm(r_index, ascii=True, desc="r_index"):
+        for i in tqdm(r_index, ascii=True, desc="r_index", disable=not verbose):
 
             ## determine which cases are 'safe' to interpolate
             safe_list = np.where(
