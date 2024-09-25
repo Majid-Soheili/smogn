@@ -18,7 +18,6 @@ def over_sampling(
         perc,  ## over / under sampling
         pert,  ## perturbation / noise percentage
         k,  ## num of neighs for over-sampling
-        nom_features=None,  ## list of nominal features
         seed=None,  ## random seed for sampling (pos int or None)
         verbose=True  ## print statements
 ):
@@ -122,16 +121,13 @@ def over_sampling(
     ## label encode nominal / categorical features
     ## (strictly label encode, not one hot encode)
 
-    if nom_features is not None:
-        feat_list_nom = nom_features
-    else:
-        feat_list_nom = []
-        nom_dtypes = ["object", "bool", "datetime64", "category"]
-        for j in range(d):
-            if data.dtypes[j] in nom_dtypes:
-                feat_list_nom.append(j)
-                if data.dtypes[j] != "category":
-                    data.iloc[:, j] = pd.Categorical(pd.factorize(data.iloc[:, j])[0])
+    feat_list_nom = []
+    nom_dtypes = ["object", "bool", "datetime64", "category"]
+    for j in range(d):
+        if data.dtypes[j] in nom_dtypes:
+            feat_list_nom.append(j)
+            if data.dtypes[j] != "category":
+                data.iloc[:, j] = pd.Categorical(pd.factorize(data.iloc[:, j])[0])
 
     data = data.apply(pd.to_numeric)
 
