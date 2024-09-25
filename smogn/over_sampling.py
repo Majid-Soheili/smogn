@@ -422,26 +422,32 @@ def over_sampling(
                                 size=1) * t_pert)
 
                             if x in feat_list_nom:
-                                if len(data.iloc[:, x].unique() == 1):
-                                    synth_matrix[
-                                        index_gaus, x] = data.iloc[0, x]
+                                unique_values = data.iloc[:, x].unique()
+                                num_unique = len(unique_values)
+                                if num_unique == 1:
+                                    # Assign the sole unique value to the synth_matrix
+                                    synth_matrix[index_gaus, x] = data.iloc[0, x]
                                 else:
-                                    probs = [None] * len(
-                                        data.iloc[:, x].unique())
 
-                                    for z in range(len(
-                                            data.iloc[:, x].unique())):
-                                        probs[z] = len(
-                                            np.where(data.iloc[
-                                                     :, x] == data.iloc[:, x][z]))
-                                    ## set random seed
-                                    if seed:
-                                        rd.seed(a=seed)
+                                    # Calculate the frequency of each unique value using value_counts
+                                    value_counts = data.iloc[:, x].value_counts().reindex(unique_values).fillna(0)
 
-                                    synth_matrix[index_gaus, x] = rd.choices(
-                                        population=data.iloc[:, x].unique(),
+                                    # Convert counts to weights
+                                    probs = value_counts.tolist()
+
+                                    # Set random seed if provided
+                                    if seed is not None:
+                                        rd.seed(seed)
+
+                                    # Select one value based on the computed probabilities
+                                    selected_value = rd.choices(
+                                        population=unique_values,
                                         weights=probs,
-                                        k=1)
+                                        k=1
+                                    )[0]  # Extract the single value from the list
+
+                                    # Assign the selected value to the synth_matrix
+                                    synth_matrix[index_gaus, x] = selected_value
 
     if n_synth > 0:
         count = 0
@@ -532,28 +538,30 @@ def over_sampling(
                             size=1) * t_pert)
 
                         if x in feat_list_nom:
-                            if len(data.iloc[:, x].unique() == 1):
+                            if len(data.iloc[:, x].unique()) == 1:
                                 synth_matrix[
                                     x_synth * n + count, x] = data.iloc[0, x]
                             else:
-                                probs = [None] * len(data.iloc[:, x].unique())
+                                # Extract unique values and their counts using pandas
+                                unique_values = data.iloc[:, x].unique()
+                                value_counts = data.iloc[:, x].value_counts().reindex(unique_values).fillna(0)
 
-                                for z in range(len(data.iloc[:, x].unique())):
-                                    probs[z] = len(np.where(
-                                        data.iloc[:, x] == data.iloc[:, x][z])
-                                    )
+                                # Convert counts to probabilities (weights)
+                                probs = value_counts.tolist()
 
-                                ## set random seed
-                                if seed:
-                                    rd.seed(a=seed)
+                                # Set random seed if provided
+                                if seed is not None:
+                                    rd.seed(seed)
 
-                                synth_matrix[
-                                    x_synth * n + count, x] = rd.choices(
-                                    population=data.iloc[:, x].unique(),
+                                # Select one value based on the computed probabilities
+                                selected_value = rd.choices(
+                                    population=unique_values,
                                     weights=probs,
                                     k=1
-                                )
+                                )[0]  # Extract the single value from the list
 
+                                # Assign the selected value to the synth_matrix
+                                synth_matrix[x_synth * n + count, x] = selected_value
             ## close loop counter
             count = count + 1
 
