@@ -128,7 +128,10 @@ def over_sampling(
         if data.dtypes[j] in nom_dtypes:
             feat_list_nom.append(j)
             codes, uniques = pd.factorize(data.iloc[:, j])
-            data.iloc[:, j] = pd.Categorical(codes)
+            if data.dtypes[j] == 'category':
+                data.iloc[:, j] = pd.Categorical.from_codes(codes, categories=uniques)
+            else:
+                data.iloc[:, j] = pd.Categorical(codes)
             mapping_dict[j] = dict(zip(range(len(uniques)), uniques))
 
     print(mapping_dict)
