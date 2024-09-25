@@ -301,7 +301,7 @@ def smoter(
             dtype_orig = feat_dtypes_orig[j]
             column_name = data_new.columns[j]
             column = data_new[column_name]
-            if column_name in nom_features:
+            if nom_features is not None and column_name in nom_features:
                 dtype_orig = 'int64'
 
             if dtype_orig in [np.int64, pd.Int64Dtype()]:
