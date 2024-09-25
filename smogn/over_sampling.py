@@ -134,7 +134,6 @@ def over_sampling(
                 data.iloc[:, j] = pd.Categorical(codes)
             mapping_dict[j] = dict(zip(range(len(uniques)), uniques))
 
-    print(mapping_dict)
     data = data.apply(pd.to_numeric)
 
     ## create numeric feature list
