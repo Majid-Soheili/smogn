@@ -305,8 +305,6 @@ def smoter(
                 column = column.round()
 
             column = column.astype(dtype_orig)
-            data_new.loc[:, column_name] = column
-
             result_df = pd.concat([result_df, column], axis=1)
 
     ## return modified training set
