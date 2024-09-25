@@ -95,7 +95,7 @@ def over_sampling(
     ## temporarily remove constant features
     if len(feat_const) > 0:
 
-        ## create copy of orignal data and omit constant features
+        ## create copy of original data and omit constant features
         data_orig = data.copy()
         data = data.drop(data.columns[feat_const], axis=1)
 
@@ -126,13 +126,13 @@ def over_sampling(
     else:
         feat_list_nom = []
 
-    nom_dtypes = ["object", "bool", "datetime64"]
+    nom_dtypes = ["object", "bool", "datetime64", "category"]
 
     for j in range(d):
         if data.dtypes[j] in nom_dtypes:
             feat_list_nom.append(j)
-            data.iloc[:, j] = pd.Categorical(pd.factorize(
-                data.iloc[:, j])[0])
+            if data.dtypes[j] != "category":
+                data.iloc[:, j] = pd.Categorical(pd.factorize(data.iloc[:, j])[0])
 
     data = data.apply(pd.to_numeric)
 
@@ -142,20 +142,12 @@ def over_sampling(
     ## calculate ranges for numeric / continuous features
     ## (includes label encoded features)
     feat_ranges = list(np.repeat(1, d))
-
-    #feature range shold be 1 if the feature is nominal else max - min
-    for j in range(d):
-        if j in feat_list_nom:
-            feat_ranges[j] = 1
-        else:
+    if len(feat_list_nom) > 0:
+        for j in feat_list_num:
             feat_ranges[j] = max(data.iloc[:, j]) - min(data.iloc[:, j])
-
-    #if len(feat_list_nom) > 0:
-    #    for j in feat_list_num:
-    #        feat_ranges[j] = max(data.iloc[:, j]) - min(data.iloc[:, j])
-    #else:
-    #   for j in range(d):
-    #        feat_ranges[j] = max(data.iloc[:, j]) - min(data.iloc[:, j])
+    else:
+       for j in range(d):
+            feat_ranges[j] = max(data.iloc[:, j]) - min(data.iloc[:, j])
 
     ## subset feature ranges to include only numeric features
     ## (excludes label encoded features)
@@ -169,27 +161,78 @@ def over_sampling(
     feat_count_num = len(feat_list_num)
     feat_count_nom = len(feat_list_nom)
 
+    n_samples = n
+
+    # Initialize the distance matrix
+    dist_matrix = np.zeros((n_samples, n_samples))
+
+    # Convert data to NumPy arrays for efficient computation
+    data_num_array = None
+    data_nom_array = None
+    if feat_count_num > 0:
+        data_num_array = data_num.values  # Shape: (n_samples, n_numeric_features)
+    if feat_count_nom > 0:
+        data_nom_array = data_nom.values  # Shape: (n_samples, n_nominal_features)
+
+    # Compute the distance matrix
+    if feat_count_num > 0 and feat_count_nom == 0:
+        # Case 1: All features are numeric
+        # Compute Euclidean distance using vectorized operations
+        s = np.sum(data_num_array ** 2, axis=1)
+        dist_matrix = np.sqrt(
+            s[:, np.newaxis] + s[np.newaxis, :] - 2 * np.dot(data_num_array, data_num_array.T)
+        )
+
+    elif feat_count_nom > 0 and feat_count_num == 0:
+        # Case 2: All features are nominal
+        # Compute Hamming distance using vectorized operations
+        diff_nom = data_nom_array[:, np.newaxis, :] != data_nom_array[np.newaxis, :, :]
+        dist_matrix = np.sum(diff_nom, axis=2).astype(float)
+
+    elif feat_count_num > 0 and feat_count_nom > 0:
+        # Case 3: Mixed features (both numeric and nominal)
+        # Numeric part
+        diff_num = (
+                    data_num_array[:, np.newaxis, :] - data_num_array[np.newaxis, :, :]
+                   ) / feat_ranges_num  # Normalize differences
+
+        diff_num **= 2  # Square differences
+        sum_diff_num = np.sum(diff_num, axis=2)
+
+        # Nominal part
+        diff_nom = data_nom_array[:, np.newaxis, :] != data_nom_array[np.newaxis, :, :]
+        diff_nom = diff_nom.astype(float)
+        sum_diff_nom = np.sum(diff_nom, axis=2)
+
+        # Combine numeric and nominal distances
+        dist_matrix = np.sqrt(sum_diff_num + sum_diff_nom)
+
+    else:
+        # No features present
+        dist_matrix = np.zeros((n_samples, n_samples))
+
+
     ## calculate distance between observations based on data types
     ## store results over null distance matrix of n x n
-    dist_matrix = np.zeros(shape=(n, n))
-    if feat_count_nom > 0:
-
-        diff = data[:, np.newaxis, :] - data[np.newaxis, :, :]
-        # Divide the differences by 'ranges_num'
-        diff /= feat_ranges
-
-        # For nominal indices, replace all non-zero values with 1
-        diff[:, :, feat_list_num] = np.where(diff[:,:, feat_list_num] != 0, 1, 0)
-
-        # Square the differences
-        diff **= 2
-
-        # Sum the squared differences along the last axis
-        dist_num = np.sum(diff, axis=-1)
-
-        # Take the square root of the sum
-        dist_num = np.sqrt(dist_num)
-        dist_matrix = dist_num
+    #dist_matrix = np.zeros(shape=(n, n))
+    #if feat_count_nom > 0:
+#
+    #    diff = data.values[:, np.newaxis, :] - data.values[np.newaxis, :, :]
+    #    # Divide the differences by 'ranges_num'
+    #    diff /= feat_ranges
+#
+    #    # For nominal indices, replace all non-zero values with 1
+    #    diff[:, :, feat_list_num] = np.where(diff[:,:, feat_list_num] != 0, 1, 0)
+#
+    #    # Square the differences
+    #    diff **= 2
+#
+    #    # Sum the squared differences along the last axis
+    #    dist_num = np.sum(diff, axis=-1)
+#
+    #    # Take the square root of the sum
+    #    dist_num = np.sqrt(dist_num)
+    #    dist_matrix = dist_num
 #
 #    for i in tqdm(range(n), ascii=True, desc="dist_matrix"):
     #    for j in range(i + 1, n):
