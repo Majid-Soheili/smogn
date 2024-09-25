@@ -126,14 +126,12 @@ def over_sampling(
         feat_list_nom = nom_features
     else:
         feat_list_nom = []
-
-    nom_dtypes = ["object", "bool", "datetime64", "category"]
-
-    for j in range(d):
-        if data.dtypes[j] in nom_dtypes:
-            feat_list_nom.append(j)
-            if data.dtypes[j] != "category":
-                data.iloc[:, j] = pd.Categorical(pd.factorize(data.iloc[:, j])[0])
+        nom_dtypes = ["object", "bool", "datetime64", "category"]
+        for j in range(d):
+            if data.dtypes[j] in nom_dtypes:
+                feat_list_nom.append(j)
+                if data.dtypes[j] != "category":
+                    data.iloc[:, j] = pd.Categorical(pd.factorize(data.iloc[:, j])[0])
 
     data = data.apply(pd.to_numeric)
 
