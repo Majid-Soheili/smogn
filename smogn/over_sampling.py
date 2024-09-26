@@ -151,7 +151,7 @@ def over_sampling(
 
     ## subset feature ranges to include only numeric features
     ## (excludes label encoded features)
-    feat_ranges_num = [feat_ranges[i] for i in feat_list_num]
+    feat_ranges_num = np.array([feat_ranges[i] for i in feat_list_num])
 
     ## subset data by either numeric / continuous or nominal / categorical
     data_num = data.iloc[:, feat_list_num]
@@ -173,6 +173,17 @@ def over_sampling(
         data_num_array = data_num.values  # Shape: (n_samples, n_numeric_features)
     if feat_count_nom > 0:
         data_nom_array = data_nom.values  # Shape: (n_samples, n_nominal_features)
+
+
+    # Ensure data_num_array does not contain NaNs
+    if np.isnan(data_num_array).any():
+        raise ValueError("Numeric data contains NaNs. Please handle missing values before proceeding.")
+
+    if 0 in feat_ranges_num:
+        raise ValueError("Numeric features contain zero range. Please remove constant features before proceeding.")
+
+    if np.isnan(feat_ranges_num).any():
+        raise ValueError("Ranges of numeric features contain NaNs. Please handle missing values before proceeding.")
 
     # Compute the distance matrix
     if feat_count_num > 0 and feat_count_nom == 0:
