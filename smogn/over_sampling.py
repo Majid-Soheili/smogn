@@ -229,8 +229,11 @@ def over_sampling(
         # No features present
         dist_matrix = np.zeros((n_samples, n_samples))
 
+    # Ensure the distance matrix does not contain NaNs
     if np.isnan(dist_matrix).any():
         raise ValueError("Distance matrix contains NaNs.")
+
+
     ## calculate distance between observations based on data types
     ## store results over null distance matrix of n x n
     #dist_matrix = np.zeros(shape=(n, n))
@@ -344,7 +347,7 @@ def over_sampling(
         p=None
     )
 
-    ## Check the Standard Deviation of the features
+    ## Quality Check the Standard Deviation of the features
     for x in range(d):
         scale = np.std(data.iloc[:, x].dropna())
         if np.isnan(scale):
@@ -598,6 +601,10 @@ def over_sampling(
 
     ## synthetic data quality check
     if sum(data_new.isnull().sum()) > 0:
+        # find which features have missing values
+        missing_features = data_new.columns[data_new.isnull().any()].tolist()
+        print_(f"Synthetic data contains missing values in features: {missing_features}")
+        print(feat_ranges)
         print(feat_ranges_num)
         raise ValueError("oops! synthetic data contains missing values")
 
