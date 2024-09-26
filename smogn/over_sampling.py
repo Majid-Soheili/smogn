@@ -2,6 +2,8 @@
 import numpy as np
 import pandas as pd
 import random as rd
+
+from six import print_
 from tqdm import tqdm
 
 ## load dependencies - internal
@@ -587,6 +589,7 @@ def over_sampling(
 
     ## synthetic data quality check
     if sum(data_new.isnull().sum()) > 0:
+        print(feat_ranges_num)
         raise ValueError("oops! synthetic data contains missing values")
 
     ## replace label encoded values with original values
