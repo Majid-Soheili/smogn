@@ -229,7 +229,8 @@ def over_sampling(
         # No features present
         dist_matrix = np.zeros((n_samples, n_samples))
 
-
+    if np.isnan(dist_matrix).any():
+        raise ValueError("Distance matrix contains NaNs.")
     ## calculate distance between observations based on data types
     ## store results over null distance matrix of n x n
     #dist_matrix = np.zeros(shape=(n, n))
@@ -342,6 +343,14 @@ def over_sampling(
         replace=False,
         p=None
     )
+
+    ## Check the Standard Deviation of the features
+    for x in range(d):
+        scale = np.std(data.iloc[:, x].dropna())
+        if np.isnan(scale):
+            print(f"Standard deviation for feature {x} is NaN.")
+            scale = 0  # or a small positive value
+
 
     ## create null matrix to store new synthetic observations
     synth_matrix = np.ndarray(shape=((x_synth * n + n_synth), d))
