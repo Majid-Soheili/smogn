@@ -21,7 +21,6 @@ def smoter(
     drop_na_col = True,       ## auto drop columns with nan's (bool)
     drop_na_row = True,       ## auto drop rows with nan's (bool)
     replace = False,          ## sampling replacement (bool)
-    nom_features = None,      ## nominal features (list of strings)
     seed = None,              ## seed for random sampling (pos int or None)
     
     ## phi relevance function arguments / inputs
