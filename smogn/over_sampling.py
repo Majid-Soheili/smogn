@@ -179,6 +179,9 @@ def over_sampling(
     if np.isnan(data_num_array).any():
         raise ValueError("Numeric data contains NaNs. Please handle missing values before proceeding.")
 
+    if np.isnan(data_nom_array).any():
+        raise ValueError("Nominal data contains NaNs. Please handle missing values before proceeding.")
+
     if 0 in feat_ranges_num:
         raise ValueError("Numeric features contain zero range. Please remove constant features before proceeding.")
 
