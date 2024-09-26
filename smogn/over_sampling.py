@@ -94,22 +94,23 @@ def over_sampling(
 
     ## temporarily remove constant features
     if len(feat_const) > 0:
-
         ## create copy of original data and omit constant features
         data_orig = data.copy()
-        data = data.drop(data.columns[feat_const], axis=1)
+        data = data.drop(columns=feat_const)
 
         ## store list of features with variation
         feat_var = list(data.columns.values)
 
         ## reindex features with variation
-        for i in range(d - len(feat_const)):
-            data.rename(columns={
-                data.columns[i]: i
-            }, inplace=True)
+        data.reset_index(drop=True, inplace=True)
+        data.columns = range(len(data.columns))
 
         ## store new dimension of feature space
         d = len(data.columns)
+
+    ## find features without variation (constant features)
+    feat_const = data.columns[data.nunique() == 1]
+
 
     ## create copy of data containing variation
     data_var = data.copy()
@@ -182,11 +183,12 @@ def over_sampling(
     if np.isnan(data_nom_array).any():
         raise ValueError("Nominal data contains NaNs. Please handle missing values before proceeding.")
 
+    if np.isnan(feat_ranges_num).any():
+        raise ValueError("Ranges of numeric features contain NaNs. Please handle missing values before proceeding.")
+
     if 0 in feat_ranges_num:
         raise ValueError("Numeric features contain zero range. Please remove constant features before proceeding.")
 
-    if np.isnan(feat_ranges_num).any():
-        raise ValueError("Ranges of numeric features contain NaNs. Please handle missing values before proceeding.")
 
     # Compute the distance matrix
     if feat_count_num > 0 and feat_count_nom == 0:
