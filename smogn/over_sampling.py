@@ -174,18 +174,6 @@ def over_sampling(
     if feat_count_nom > 0:
         data_nom_array = data_nom.values  # Shape: (n_samples, n_nominal_features)
 
-    # Ensure data_num_array does not contain NaNs
-    if np.isnan(data_num_array).any():
-        raise ValueError("Numeric data contains NaNs. Please handle missing values before proceeding.")
-
-    # check if there are any zeros in feat_ranges_num
-    if 0 in feat_ranges_num:
-        raise ValueError("Some features have a range of zero. Please ensure that the features have non-zero variance.")
-
-    # Replace zeros and NaNs in feat_ranges_num with ones
-    #feat_ranges_num[feat_ranges_num == 0] = 1
-    #feat_ranges_num = np.nan_to_num(feat_ranges_num, nan=1)
-
     # Compute the distance matrix
     if feat_count_num > 0 and feat_count_nom == 0:
         # Case 1: All features are numeric
