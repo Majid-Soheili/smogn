@@ -149,7 +149,7 @@ def smoter(
     ## encode feature headers to index position
     feat_names = list(data.columns)
     data.columns = range(d)
-    
+
     ## sort response variable y by ascending order
     y = pd.DataFrame(data[d - 1])
     y_sort = y.sort_values(by = d - 1)
@@ -298,11 +298,10 @@ def smoter(
     result_df = pd.DataFrame()
 
     for j in range(d):
+            # for category based on the original data type it can handle it
             dtype_orig = feat_dtypes_orig[j]
             column_name = data_new.columns[j]
             column = data_new[column_name]
-            if nom_features is not None and column_name in nom_features:
-                dtype_orig = 'int64'
 
             if dtype_orig in [np.int64, pd.Int64Dtype()]:
                 column = column.round()

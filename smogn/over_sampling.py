@@ -110,10 +110,6 @@ def over_sampling(
         ## store new dimension of feature space
         d = len(data.columns)
 
-    ## find features without variation (constant features)
-    feat_const = data.columns[data.nunique() == 1]
-
-
     ## create copy of data containing variation
     data_var = data.copy()
 
@@ -130,11 +126,14 @@ def over_sampling(
     for j in range(d):
         if data.dtypes[j] in nom_dtypes:
             feat_list_nom.append(j)
-            codes, uniques = pd.factorize(data.iloc[:, j])
+
             if data.dtypes[j] == 'category':
-                data.iloc[:, j] = pd.Categorical.from_codes(codes, categories=uniques)
+                uniques = data.iloc[:, j].cat.categories
+                data.iloc[:, j] = pd.Categorical(data.iloc[:, j].cat.codes)
             else:
+                codes, uniques = pd.factorize(data.iloc[:, j])
                 data.iloc[:, j] = pd.Categorical(codes)
+
             mapping_dict[j] = dict(zip(range(len(uniques)), uniques))
 
     data = data.apply(pd.to_numeric)
