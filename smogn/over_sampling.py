@@ -129,10 +129,10 @@ def over_sampling(
 
             if data.dtypes[j] == 'category':
                 uniques = data.iloc[:, j].cat.categories
-                codes= data.iloc[:, j].cat.codes.values
+                codes= data.iloc[:, j].cat.codes.values.copy()
                 # clean the data.iloc[:, j] such that it is not a category and be int
                 data.iloc[:, j] = None
-                data.iloc[:, j] = data.iloc[:, j].astype('float')
+                #data.iloc[:, j] = data.iloc[:, j].astype('float')
                 data.iloc[:, j] = pd.Categorical(codes)
                 #data.iloc[:, j] = pd.Categorical(data.iloc[:, j].cat.codes)
             else:
