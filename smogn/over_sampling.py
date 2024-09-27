@@ -20,6 +20,7 @@ def over_sampling(
         perc,  ## over / under sampling
         pert,  ## perturbation / noise percentage
         k,  ## num of neighs for over-sampling
+        missing_values_thr = 0.1,  ## how to handle missing values
         seed=None,  ## random seed for sampling (pos int or None)
         verbose=True  ## print statements
 ):
@@ -601,12 +602,18 @@ def over_sampling(
 
     ## synthetic data quality check
     if sum(data_new.isnull().sum()) > 0:
-        # find which features have missing values
-        missing_features = data_new.columns[data_new.isnull().any()].tolist()
-        print_(f"Synthetic data contains missing values in features: {missing_features}")
-        print(feat_ranges)
-        print(feat_ranges_num)
-        raise ValueError("oops! synthetic data contains missing values")
+
+        #compute how percentage of rows contain missing values
+        n1 = len(data_new)
+        n2 = data_new.isnull().any(axis=1).sum()
+        missing_rows_percent = n2 / n1
+        print_(f"Synthetic data contains missing values in {missing_rows_percent:.2%} of rows: {n2}/{n1}")
+        #print_(f"Synthetic data contains missing values in {missing_rows_percent:.2%} of rows")
+        if missing_rows_percent > missing_values_thr:
+            raise ValueError(f"oops! synthetic data contains missing values in {missing_rows_percent:.2%} of rows")
+        else:
+            data_new = data_new.dropna()
+
 
     ## replace label encoded values with original values
     for j in feat_list_nom:
