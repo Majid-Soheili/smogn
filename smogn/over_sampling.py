@@ -5,7 +5,7 @@ import random as rd
 
 from six import print_
 from tqdm import tqdm
-
+import logging
 ## load dependencies - internal
 from smogn.box_plot_stats import box_plot_stats
 from smogn.dist_metrics import euclidean_dist, heom_dist, overlap_dist
@@ -527,17 +527,48 @@ def over_sampling(
                 ## generate synthetic y response variable by
                 ## inverse distance weighted
                 for z in feat_list_num[0:(d - 1)]:
-                    a = abs(data.iloc[i, z] - synth_matrix[
-                        x_synth * n + count, z]) / feat_ranges[z]
-                    b = abs(data.iloc[knn_matrix[i, neigh], z] - synth_matrix[
-                        x_synth * n + count, z]) / feat_ranges[z]
+                    try:
+                        # Calculate differences
+                        diff_a = abs(data.iloc[i, z] - synth_matrix[x_synth * n + count, z])
+                        diff_b = abs(data.iloc[knn_matrix[i, neigh], z] - synth_matrix[x_synth * n + count, z])
+
+                        # Check for NaNs or infinities
+                        if np.isnan(diff_a) or np.isinf(diff_a):
+                            logging.warning(f"Invalid diff_a for feature {z} at i={i}, j={j}")
+                            diff_a = 0.0  # Assign a default value or handle appropriately
+
+                        if np.isnan(diff_b) or np.isinf(diff_b):
+                            logging.warning(f"Invalid diff_b for feature {z} at i={i}, j={j}")
+                            diff_b = 0.0  # Assign a default value or handle appropriately
+
+                        # Normalize differences
+                        if feat_ranges[z] == 0:
+                            logging.warning(f"Feature range zero for feature {z}. Adjusting to avoid division by zero.")
+                            norm_a = 0.0  # Or assign a small epsilon value
+                            norm_b = 0.0
+                        else:
+                            norm_a = diff_a / feat_ranges[z]
+                            norm_b = diff_b / feat_ranges[z]
+
+                        # Accumulate
+                        a += norm_a
+                        b += norm_b
+
+                    except IndexError as ie:
+                        logging.error(f"Index error for feature {z} at i={i}, j={j}: {ie}")
+                        continue  # Skip to the next feature
+
+                    except Exception as e:
+                        logging.error(f"Unexpected error for feature {z} at i={i}, j={j}: {e}")
+                        continue  # Skip to the next feature
+
+
+                    a = abs(data.iloc[i, z] - synth_matrix[x_synth * n + count, z]) / feat_ranges[z]
+                    b = abs(data.iloc[knn_matrix[i, neigh], z] - synth_matrix[x_synth * n + count, z]) / feat_ranges[z]
 
                 if len(feat_list_nom) > 0:
-                    a = a + sum(data.iloc[i, feat_list_nom] != synth_matrix[
-                        x_synth * n + count, feat_list_nom])
-                    b = b + sum(data.iloc[
-                                    knn_matrix[i, neigh], feat_list_nom] != synth_matrix[
-                                    x_synth * n + count, feat_list_nom])
+                    a = a + sum(data.iloc[i, feat_list_nom] != synth_matrix[x_synth * n + count, feat_list_nom])
+                    b = b + sum(data.iloc[knn_matrix[i, neigh], feat_list_nom] != synth_matrix[x_synth * n + count, feat_list_nom])
 
                 if a == b:
                     synth_matrix[x_synth * n + count, (d - 1)] = (data.iloc[
