@@ -11,29 +11,14 @@ We assume that all column should be numeric. If there are nominal columns, they 
 """
 
 class OverSampler:
-
-    _original_data:pd.DataFrame = None
-    _categorical_columns = None
-    _percentage:float = None
-    _perturbation = None
-    _nk:int = None
-    _synth_data:pd.DataFrame = None
-
-    _distance_matrix = None
-    _knn_matrix = None
-    _base_obs_indices = None # index of observation data used as the base to generate synthetic data
-    _schema = None
-    _seed = None
-    _verbose = None
-
     def __init__(self, data, index, cat_columns, percentage:float, perturbation, nk=5, seed = 0, verbose = False):
         """
         :param data (pd.DataFrame): The dataset to be used for over-sampling.
+        :param index (pandas.index): The index which make a subset of data frame.
         :param cat_columns (list): The list of column names that are categorical.
         :param percentage (float): The percentage of under/over-sampling to be performed.
         :param perturbation (float): The amount of noise to add original samples to generate synthetic samples.
         :param nk (int, optional): The number of nearest neighbors for  oversampling. Default is 5.
-        :param missing_values_thr (float, optional): The threshold for the percentage of rows in the synthetic data that can contain missing values. Default is 0.1 (10%).
         :param seed (int, optional): The random seed for reproducibility. Default is 0.
         :param verbose (bool, optional): Controls the verbosity of the output. Default is False.
         """
@@ -47,18 +32,48 @@ class OverSampler:
         self._percentage = percentage
         self._perturbation = perturbation
         self._nk = nk
+
+        self._synth_data = pd.DataFrame()
+        self._distance_matrix = None
+        self._max_distance = None
+        self._knn_matrix = None
+        self._base_obs_indices = None # index of observation data used as the base to generate synthetic data
+        self._schema = None
+
         self._seed = seed
         self._verbose = verbose
-        self._synth_data = pd.DataFrame()
 
         # Initialize the schema
-        self.__remove_nan_rows()
-        self.__define_schema()
+        self._remove_nan_rows()
+        self._define_schema()
 
+
+    ## == Public methods == ##
+
+    def generate_synthetic_data(self):
+        # Generate synthetic data
+        # For each base observation, generate nk synthetic observations
+        # For each synthetic observation
+        nr = len(self._base_obs_indices)
+        synth_list = []
+        for obs in tqdm(self._base_obs_indices, ascii=True, desc="synth_matrix", disable=not self._verbose):
+
+            neighbour_indic, safe = self._choose_random_nearest_neighbour(obs)
+
+            if safe:
+                synth = self._generate_synthetic_smoter(obs, neighbour_indic)
+            else:
+                synth = self._generate_synthetic_gaussian(obs)
+
+            synth_list.append(synth)
+
+        self._synth_data = pd.DataFrame(synth_list, columns=self._schema.column_names)
+        self._reconstruct_synth_schema()
+        return self._synth_data
 
     ## == Private methods == ##
 
-    def __compute_distance_matrix(self):
+    def _compute_distance_matrix(self):
 
         # Compute the distance matrix
         data_num_array = self._original_data[self._schema.numerical_features].to_numpy()
@@ -101,20 +116,20 @@ class OverSampler:
             self._distance_matrix = None
             raise ValueError("No features present in the data.")
 
-    def __compute_nn_matrix(self):
+    def _compute_nn_matrix(self):
         # Compute the nearest neighbors matrix
         self._knn_matrix = np.argsort(self._distance_matrix, axis=1)[:, 1:self._nk + 1]
 
-    def __compute_max_distance(self):
+    def _calculate_max_distance_threshold(self):
         ## calculate max distances to determine if gaussian noise is applied
         ## (half the median of the distances per observation)
 
         #max_dist = [None] * n
         #for i in range(n):
         #    max_dist[i] = box_plot_stats(dist_matrix[i])["stats"][2] / 2
-        self.__max_distance = np.median(np.sort(self._distance_matrix)[:, -self._nk // 2])
+        self._max_distance = np.median(np.sort(self._distance_matrix)[:, -self._nk // 2])
 
-    def define_base_obs_index(self):
+    def _define_base_obs_index(self):
 
        # Define index of observations which will be used as base to generate synthetic data
        # If percentage is less than 1, then randomly select a base observation
@@ -137,26 +152,7 @@ class OverSampler:
        indices.append(np.random.choice(range(num_total_obs), size = num_rand_obs, replace=False))
        self._base_obs_indices = np.array(indices)
 
-    def generate_synthetic_data(self):
-        # Generate synthetic data
-        # For each base observation, generate nk synthetic observations
-        # For each synthetic observation
-        nr = len(self._base_obs_indices)
-        synth_list = []
-        for obs in tqdm(self._base_obs_indices, ascii=True, desc="synth_matrix", disable=not self._verbose):
-
-            neighbour_indic, safe = self.__choose_random_nearest_neighbour(obs)
-
-            if safe:
-                synth = self.__generate_synthetic_smoter(obs, neighbour_indic)
-            else:
-                synth = self.__generate_synthetic_gaussian(obs)
-
-            synth_list.append(synth)
-
-        self._synth_data = pd.DataFrame(synth_list, columns=self._schema.column_names)
-
-    def __generate_synthetic_smoter(self, obs, neighbour):
+    def _generate_synthetic_smoter(self, obs, neighbour):
         # Generate synthetic data using the SMOTR algorithm
         ## conduct synthetic minority over-sampling
         ## technique for regression (smoter)
@@ -174,18 +170,18 @@ class OverSampler:
 
         ## generate synthetic y response variable by
         ## inverse distance weighted
-        synth_target = self.__inverse_distance_weighted(obs, neighbour, synth)
+        synth_target = self._inverse_distance_weighted(obs, neighbour, synth)
         synth[self._schema.target_name] = synth_target
 
         return synth
 
-    def __generate_synthetic_gaussian(self, obs):
+    def _generate_synthetic_gaussian(self, obs):
         # Generate synthetic data using Gaussian noise
         ## conduct synthetic minority over-sampling technique
         ## for regression with the introduction of gaussian
         ## noise (smoter-gn)
 
-        t_per = min(self.__max_distance[obs], self._perturbation)
+        t_per = min(self._max_distance[obs], self._perturbation)
         synth = self._original_data.iloc[obs, :].copy(deep=True)
 
         # rate for each column is different and based on the std of the column
@@ -208,7 +204,7 @@ class OverSampler:
         synth = np.array(1)
         return synth
 
-    def __choose_random_nearest_neighbour(self, obs):
+    def _choose_random_nearest_neighbour(self, obs):
         # for a given observation,
         # 1) choose the nearest neighbours, and
         # 2) specify if they are safe or not
@@ -217,10 +213,10 @@ class OverSampler:
         # select random number from 1 to nk
         random_neighbour = random.randint(0, self._nk - 1)
         random_neighbour_indices = self._knn_matrix[obs, random_neighbour]
-        safe = self._distance_matrix[obs, random_neighbour_indices] < self.__max_distance
+        safe = self._distance_matrix[obs, random_neighbour_indices] < self._max_distance
         return [random_neighbour_indices, safe]
 
-    def __inverse_distance_weighted(self, obs, neigh, synth:pd.Series):
+    def _inverse_distance_weighted(self, obs, neigh, synth:pd.Series):
         # Generate synthetic y response variable by inverse distance weighted
 
         # Calculate the difference for all columns except the target column
@@ -253,24 +249,25 @@ class OverSampler:
 
         return synth_target
 
-    def reconstruct_synth_schema(self):
+    def _reconstruct_synth_schema(self):
         # Reconstruct the data
-        pass
+        self._checking_non_negative_columns()
+        self._checking_constant_columns()
 
-    def __checking_non_negative_columns(self):
+    def _checking_non_negative_columns(self):
         # Check teh columns for negative values which they should not have
         for col in self._schema.non_negative_columns:
             self._synth_data[col] = self._synth_data[col].apply(lambda x: x if x >= 0 else 0)
 
-    def __checking_constant_columns(self):
+    def _checking_constant_columns(self):
         # Check the columns for constant values
         for col in self._schema.constant_features:
             self._synth_data[col] = self._schema.constant_values[col]
 
-    def __remove_nan_rows(self):
+    def _remove_nan_rows(self):
         self._original_data.dropna(inplace=True)
 
-    def __define_schema(self):
+    def _define_schema(self):
         self._schema = schema.Schema()
         self._schema.define_schema(self._original_data, self._categorical_columns)
 
