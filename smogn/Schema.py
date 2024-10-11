@@ -5,8 +5,12 @@ class Schema:
     # Basic Members ============================================================
 
     __num_dtypes = ["int64", "float64"]
-    indexes:np.ndarray = field(default_factory=lambda: np.array([]))
-    names:np.ndarray = field(default_factory=lambda: np.array([]))
+    target_name:str = ""
+    target_index:int = 0
+    features_name:np.ndarray = field(default_factory=lambda: np.array([]))
+    features_index:np.ndarray = field(default_factory=lambda: np.array([]))
+    column_indexes:np.ndarray = field(default_factory=lambda: np.array([]))
+    column_names:np.ndarray = field(default_factory=lambda: np.array([]))
     data_types:np.ndarray = field(default_factory=lambda: np.array([]))
 
     # Range and Standard Deviation Members =====================================
