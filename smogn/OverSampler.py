@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import random
 import logging
+
 from tqdm import tqdm
 from smogn.Schema import Schema
 from smogn.box_plot_stats import box_plot_stats
@@ -13,7 +14,7 @@ We assume that all column should be numeric. If there are nominal columns, they 
 """
 
 class OverSampler:
-    def __init__(self, data, index, cat_columns, percentage:float, perturbation, nk=5, seed = 0, verbose = False):
+    def __init__(self, data, index, percentage:float, perturbation, nk=5, seed = 0, verbose = False):
         """
         :param data (pd.DataFrame): The dataset to be used for over-sampling.
         :param index (pandas.index): The index which make a subset of data frame.
@@ -30,7 +31,6 @@ class OverSampler:
 
         self._original_data = data.iloc[index, :].copy(deep=True)
         self._original_data.reset_index(drop=True, inplace=True)
-        self._categorical_columns = cat_columns
         self._percentage = percentage
         self._perturbation = perturbation
         self._nk = nk
@@ -50,6 +50,7 @@ class OverSampler:
         self._define_schema()
 
         # Initialize the pre-processing
+        self._categorical_to_int()
         self._compute_distance_matrix()
         self._compute_nn_matrix()
         self._calculate_max_distance_threshold()
@@ -222,6 +223,8 @@ class OverSampler:
 
         for col in self._schema.nominal_columns:
             unique_values = self._schema.nominal_unique_values[col]
+            # The nominal values are converted to integers, and they are coded as 0, 1, 2, ...
+            unique_values = np.array(range(len(unique_values)))
             unique_probs = self._schema.nominal_unique_probabilities[col]
             selected_value = np.random.choice(unique_values, p=unique_probs, size=1)[0]
             synth[col] = selected_value
@@ -278,6 +281,7 @@ class OverSampler:
 
     def _reconstruct_synth_schema(self):
         # Reconstruct the data
+        self._int_to_categorical()
         self._checking_non_negative_columns()
         self._checking_constant_columns()
 
@@ -294,7 +298,20 @@ class OverSampler:
     def _remove_nan_rows(self):
         self._original_data.dropna(inplace=True)
 
+    def _categorical_to_int(self):
+        # Convert categorical columns to integers
+        for col, unique_values in self._schema.nominal_unique_values.items():
+            mapping = {k: v for v, k in enumerate(unique_values)}
+            self._original_data[col] = self._original_data[col].map(mapping)
+            self._original_data[col] = self._original_data[col].astype(int)
+
+    def _int_to_categorical(self):
+        # Convert integers to categorical columns
+        for col, unique_values in self._schema.nominal_unique_values.items():
+            mapping = {v: k for v, k in enumerate(unique_values)}
+            self._synth_data[col] = self._synth_data[col].map(mapping)
+
     def _define_schema(self):
         self._schema = Schema()
-        self._schema.define_schema(self._original_data, self._categorical_columns)
+        self._schema.define_schema(self._original_data)
 
