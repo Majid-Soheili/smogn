@@ -1,8 +1,9 @@
 ## load dependencies - third party
 import numpy as np
 import pandas as pd
+import logging
 
-
+from smogn.OverSampler import OverSampler
 ## load dependencies - internal
 from smogn.phi import phi
 from smogn.phi_ctrl_pts import phi_ctrl_pts
@@ -29,6 +30,7 @@ def smoter(
     rel_xtrm_type = "both",   ## distribution focus ("high", "low", "both")
     rel_coef = 1.5,           ## coefficient for box plot (pos real)
     rel_ctrl_pts_rg = None,    ## input for "manual" rel method  (2d array)
+    missing_values_thr = 0.5, ## threshold for missing values (pos real)
     verbose = True            ## print statements (bool)
     ):
     
@@ -239,14 +241,26 @@ def smoter(
             ## generate synthetic observations in training set
             ## considered 'minority'
             ## (see 'over_sampling()' function for details)
-            synth_obs = over_sampling(
+            #synth_obs = over_sampling(
+            #    data = data,
+            #    index = list(b_index[i].index),
+            #    perc = s_perc[i],
+            #    pert = pert,
+            #    k = k,
+            #    seed = seed,
+            #    missing_values_thr = missing_values_thr,
+            #    verbose = verbose
+            #)
+            over_sampler = OverSampler(
                 data = data,
                 index = list(b_index[i].index),
-                perc = s_perc[i],
-                pert = pert,
-                k = k,
-                verbose = verbose
-            )
+                percentage = s_perc[i],
+                perturbation = pert,
+                nk = k,
+                seed = seed,
+                verbose=verbose)
+
+            synth_obs = over_sampler.generate_synthetic_data()
             
             ## concatenate over-sampling
             ## results to modified training set
