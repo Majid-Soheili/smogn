@@ -9,7 +9,7 @@ class TestSchema(unittest.TestCase):
         # Sample data for testing
         self.data_numeric = pd.DataFrame({
             'A': [0.5, 1.5, 2.5, 3.5],
-            'B': [1, 2, 1, 2],
+            'B': [1, 2, 1, 1],           # nominal column
             'C': [10, 10, 10, 10],       # constant column
             'D': [5, -1, 3, 2],          # contains negative value
             'T': [1.7, 2.3, 3.1, 3.5]    # Target column
@@ -44,7 +44,6 @@ class TestSchema(unittest.TestCase):
         # Test target
         np.testing.assert_array_equal(schema.target_name, 'T')
         np.testing.assert_array_equal(schema.target_index, 4)
-
 
         # Test data_types
         expected_dtypes = np.array(['float64', 'int64', 'int64', 'int64', 'float64'])
@@ -114,6 +113,18 @@ class TestSchema(unittest.TestCase):
 
         np.testing.assert_array_equal(schema.nominal_features, np.array(['B']))
         np.testing.assert_array_equal(schema.numerical_features, np.array(['A', 'D']))
+
+        # test nominal_unique_values
+        expected_nominal_unique_values = {
+            'B': np.array([1, 2])
+        }
+        self.assertEqual(np.array_equal(schema.nominal_unique_values['B'], expected_nominal_unique_values['B']), True)
+
+        # test nominal_unique_probabilities
+        expected_nominal_unique_probabilities = {
+            'B': np.array([0.75, 0.25])
+        }
+        self.assertEqual(np.array_equal(schema.nominal_unique_probabilities['B'], expected_nominal_unique_probabilities['B']), True)
 
 if __name__ == '__main__':
     unittest.main(argv=[''], exit=False, verbosity=2)
