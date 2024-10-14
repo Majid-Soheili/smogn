@@ -1,8 +1,6 @@
 import unittest
 import numpy as np
 import pandas as pd
-from xgboost.dask import predict
-
 from smogn.Schema import Schema
 
 class TestSchema(unittest.TestCase):
