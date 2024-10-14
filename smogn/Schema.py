@@ -13,7 +13,7 @@ class Schema:
 
     __num_dtypes = ["int64", "float64"]
     __nom_dtypes = ["object", "bool", "datetime64", "category"]
-    target_name:str = ""
+    target_name = None # it is not mandatory to be a string name.
     target_index:int = 0
 
     features_name:np.ndarray = field(default_factory=lambda: np.array([]))
@@ -86,7 +86,7 @@ class Schema:
         self.column_indexes = np.arange(len(self.column_names))
 
         # We assume that the last one of the columns is the target column
-        self.target_name = str(self.column_names[-1])
+        self.target_name = self.column_names[-1]
         self.target_index = len(self.column_names) - 1
 
         # We assume that featurea are all columns except the target column.
