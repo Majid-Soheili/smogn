@@ -77,7 +77,12 @@ class OverSampler:
             synth_list.append(synth)
 
         self._synth_data = pd.DataFrame(synth_list, columns=self._schema.column_names)
+        self._synth_data.reset_index(drop=True, inplace=True)
         self._reconstruct_synth_schema()
+
+        if sum(self._synth_data.isnull().sum()) > 0:
+            raise ValueError("Synthetic data contains NaN values.")
+
         return self._synth_data
 
     ## == Private methods == ##
