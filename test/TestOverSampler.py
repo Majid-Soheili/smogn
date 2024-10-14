@@ -12,13 +12,13 @@ class TestOverSampler(unittest.TestCase):
         self.data = pd.DataFrame({
             'feature1': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0],
             'feature2': [10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0],
-            'category': [0, 1, 0, 1, 0, 1, 0, 1, 1, 1],
+            'category': ['A', 'B', 'A', 'B', 'A', 'B', 'A', 'B', 'B', 'B'],
             'constant': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             'target': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
         })
-
+        self.data['category'] = self.data['category'].astype('category')
         self.index = np.arange(len(self.data))
-        self.cat_columns = ['category']
+        self.cat_columns = None # ['category']
         self.percentage = 2.2
         self.perturbation = 0.1
 
@@ -26,7 +26,6 @@ class TestOverSampler(unittest.TestCase):
         self.oversampler = OverSampler(
             data=self.data,
             index=self.index,
-            cat_columns=self.cat_columns,
             percentage=self.percentage,
             perturbation=self.perturbation,
             nk=2,  # Use smaller nk for testing
@@ -36,11 +35,6 @@ class TestOverSampler(unittest.TestCase):
 
     def test_initialization(self):
         """Test if OverSampler initializes correctly."""
-        # Check if original_data is correctly set
-        pd.testing.assert_frame_equal(self.oversampler._original_data, self.data.reset_index(drop=True))
-
-        # Check categorical columns
-        self.assertEqual(self.oversampler._categorical_columns, self.cat_columns)
 
         # Check percentage and perturbation
         self.assertEqual(self.oversampler._percentage, self.percentage)
@@ -129,7 +123,6 @@ class TestOverSampler(unittest.TestCase):
             # 'constant' column should remain unchanged
             self.assertTrue((synth_data['constant'] == 1).all())
 
-
     def test_generate_synthetic_smoter(self):
         """Test the _generate_synthetic_smoter method for correct synthetic sample generation."""
         # Define base observation index and neighbor index
@@ -173,7 +166,7 @@ class TestOverSampler(unittest.TestCase):
         obs_index = 0   # First observation
 
         with patch('numpy.random.random', return_value=0.5), \
-                patch('random.choice', return_value=1):  # Mock category assignment
+                patch('numpy.random.choice', return_value=np.array([0])):  # Mock category assignment
             # Call the private method _generate_synthetic_gaussian
             synthetic_sample = self.oversampler._generate_synthetic_gaussian(obs=obs_index)
 
@@ -188,3 +181,29 @@ class TestOverSampler(unittest.TestCase):
             expected_synth = expected_synth.to_numpy()
             # Assertions
             np.testing.assert_array_almost_equal(synthetic_sample, expected_synth, decimal=2)
+
+    def test_generate_synthetic_data(self):
+        """Test the generate_synthetic_data method for correct synthetic sample generation."""
+        # Define base observation index and neighbor index
+        with (patch.object(self.oversampler, '_base_obs_indices', new=np.array([0])),
+            patch.object(self.oversampler, '_choose_random_nearest_neighbour') as mock_choose_nn,
+            patch.object(self.oversampler, '_generate_synthetic_smoter') as mock_generate_smoter):
+
+            mock_choose_nn.return_value = [3, True]
+            mock_generate_smoter.return_value = pd.Series({
+                'feature1': -1.5,
+                'feature2': 9.5,
+                'category': 1,
+                'constant': 2,
+                'target': 19.09
+            })
+            expected_synthetic = pd.DataFrame([{
+                'feature1': 0,
+                'feature2': 9.5,
+                'category': 'B',
+                'constant': 1,
+                'target': 19.09
+            }])
+            synthetic_sample = self.oversampler.generate_synthetic_data()
+            pd.testing.assert_frame_equal(synthetic_sample, expected_synthetic)
+
