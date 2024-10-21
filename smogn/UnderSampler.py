@@ -40,9 +40,48 @@ class UnderSampler(Sampler):
     def _cluster_sampling(self):
         # Maximum number of clusters
         num_clusters = self.num_new_data
-        kmeans = KMeans(n_clusters=num_clusters, random_state=self.seed)
-        self._original_data['cluster'] = kmeans.fit_predict(self._original_data)
+        num_clusters = int(num_clusters)
+        kmedoids = KMedoids(n_clusters=num_clusters, metric='precomputed', random_state=self.seed)
+        # Fit the model using the distance matrix
+        kmedoids.fit(self._distance_matrix)
+        # Retrieve the cluster labels and medoid indices
+        labels = kmedoids.labels_
+        medoid_indices = kmedoids.medoid_indices_
+        self._new_data = self._original_data.iloc[medoid_indices, :].copy(deep=True)
 
-        # Get the cluster centroids
-        centroids = kmeans.cluster_centers_
-        self.new_data = pd.DataFrame(centroids, columns=self._original_data.columns)
+        # Density-Based Undersampling
+    def density_based_undersample(self, k=20, reduction_factor=0.5):
+
+        # Step 1: Compute mean distance to k nearest neighbors for each sample
+
+        sorted_distances = np.sort(self._distance_matrix, axis=1)
+        mean_distances = np.mean(sorted_distances[:, 1:k+1], axis=1)
+
+        # Step 2: Compute density as inverse of mean distance
+        density = 1 / (mean_distances + 1e-5)  # Add epsilon to avoid division by zero
+
+        # Step 3: Add density to the DataFrame
+        df = self._original_data.copy(deep=True)
+        df['density'] = density
+
+        # Step 4: Determine density threshold
+        density_threshold_percentile = 70
+        threshold = np.percentile(df['density'], density_threshold_percentile)
+
+        # Step 5: Split into high-density and low-density samples
+        high_density = df[df['density'] > threshold]
+        low_density = df[df['density'] <= threshold]
+
+        # Step 6: Calculate number of high-density samples to remove
+        n_remove = int(len(high_density) * reduction_factor)
+
+        # Step 7: Randomly remove samples from high-density group
+        high_density_reduced = high_density.sample(n=len(high_density) - n_remove, random_state=42)
+
+        # Step 8: Combine low-density and reduced high-density samples
+        under_sampled_df = pd.concat([low_density, high_density_reduced], axis=0).reset_index(drop=True)
+
+        self._new_data = under_sampled_df.drop(columns='density')
+
+
+
