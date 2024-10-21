@@ -1,28 +1,41 @@
 
-from sklearn.cluster import KMeans
+from sklearn_extra.cluster import KMedoids
+
 import pandas as pd
-class UnderSampler:
-    def __init__(self, data, index, percentage, seed=None):
+import numpy as np
 
-        self._original_data = data.iloc[index, :].copy(deep=True)
-        self._original_data.reset_index(drop=True, inplace=True)
-        self.percentage = percentage
-        self.num_new_data = int(self.percentage * len(self._original_data))
-        self.new_data = None
-        self.seed = seed
+from smogn.Sampler import Sampler
 
+
+class UnderSampler(Sampler):
+    def __init__(self, data, index, percentage, method="random", seed=None):
+
+        """
+        :param data (pd.DataFrame):
+        :param index:
+        :param percentage: it should be between 0 and 1
+        :param method:  it should be either "random", "cluster" or "density"
+        :param seed:  it should be an integer and used for reproducibility
+        """
+        self.method = method
+        super().__init__(data, index, percentage, seed)
     def provide_under_sampled_data(self):
-        self._random_sampling()
-        #if self.percentage > 0.9:
-        #     self._random_sampling()
-        #else:
-        #    self._cluster_sampling()
-        return self.new_data
+
+        if self.method == "random":
+            self._random_sampling()
+        elif self.method == "cluster":
+            self._cluster_sampling()
+        elif self.method == "density":
+            self.density_based_undersample()
+        else:
+            raise ValueError("Invalid method")
+
+        return self._new_data
 
     def _random_sampling(self):
-        # Randomly sample the data
-        self.new_data = self._original_data.sample(n=self.num_new_data, replace=False)
-        self.new_data.reset_index(drop=True, inplace=True)
+        # Randomly sample the datas
+        self._new_data = self._original_data.sample(n=self.num_new_data, replace=False).copy(deep=True)
+        self._new_data.reset_index(drop=True, inplace=True)
 
     def _cluster_sampling(self):
         # Maximum number of clusters
