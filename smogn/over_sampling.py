@@ -338,6 +338,7 @@ def over_sampling(
 
     ## set random seed 
     if seed:
+        rd.seed(seed)
         np.random.seed(seed=seed)
 
     ## randomly index data by the number of new synthetic observations
@@ -370,6 +371,7 @@ def over_sampling(
 
                 ## set random seed 
                 if seed:
+                    rd.seed(seed)
                     np.random.seed(seed=seed)
 
                 ## randomly select a k nearest neighbor
@@ -445,6 +447,7 @@ def over_sampling(
                         else:
                             ## set random seed 
                             if seed:
+                                rd.seed(seed)
                                 np.random.seed(seed=seed)
 
                             synth_matrix[index_gaus, x] = data.iloc[
@@ -492,6 +495,7 @@ def over_sampling(
 
             ## set random seed 
             if seed:
+                rd.seed(seed)
                 np.random.seed(seed=seed)
 
             ## randomly select a k nearest neighbor
@@ -561,6 +565,7 @@ def over_sampling(
                     else:
                         ## set random seed 
                         if seed:
+                            rd.seed(seed)
                             np.random.seed(seed=seed)
 
                         synth_matrix[x_synth * n + count, x] = data.iloc[
