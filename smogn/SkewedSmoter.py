@@ -47,17 +47,13 @@ class SkewedSmoter:
             original_bin_population = len(index)
             synthetic_bin_population = synth_bins_populations[i]
 
-            if original_bin_population == 0:
-                logging.warning(f"Bin {i} is empty. Skipping...")
+            if original_bin_population <= 5:
+                self._logger.warning(f"Bin {i} has less than 5 samples. Skipping...")
                 continue
 
             rate = synthetic_bin_population / original_bin_population
             if synthetic_bin_population > original_bin_population:
                 # Oversample the bin
-
-                if original_bin_population < 5:
-                    logging.warning(f"Bin {i} has less than 5 samples. Skipping...")
-                    continue
 
                 over_sampler = OverSampler(self.data, index, percentage=rate, perturbation=0.02, nk=5, verbose=True)
                 synth = over_sampler.generate_synthetic_data()
