@@ -46,7 +46,7 @@ class Sampler:
 
         # Initialize the pre-processing
         self._categorical_to_int()
-        self._compute_distance_matrix()
+        #self._compute_distance_matrix()
 
 
 
