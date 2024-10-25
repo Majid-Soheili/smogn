@@ -16,7 +16,7 @@ class UnderSampler(Sampler):
         :param seed:  it should be an integer and used for reproducibility
         """
         self.method = method
-        super().__init__(data, index, percentage, seed)
+        super().__init__(data, index, percentage, seed=seed)
     def provide_under_sampled_data(self):
 
         if self.method == "random":
