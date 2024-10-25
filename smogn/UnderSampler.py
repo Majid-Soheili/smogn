@@ -1,6 +1,4 @@
-
-from sklearn_extra.cluster import KMedoids
-
+from sklearn.cluster import DBSCAN
 import pandas as pd
 import numpy as np
 
@@ -38,16 +36,29 @@ class UnderSampler(Sampler):
         self._new_data.reset_index(drop=True, inplace=True)
 
     def _cluster_sampling(self):
-        # Maximum number of clusters
-        num_clusters = self.num_new_data
-        num_clusters = int(num_clusters)
-        kmedoids = KMedoids(n_clusters=num_clusters, metric='precomputed', random_state=self.seed)
-        # Fit the model using the distance matrix
-        kmedoids.fit(self._distance_matrix)
-        # Retrieve the cluster labels and medoid indices
-        labels = kmedoids.labels_
-        medoid_indices = kmedoids.medoid_indices_
-        self._new_data = self._original_data.iloc[medoid_indices, :].copy(deep=True)
+
+        self._compute_distance_matrix()
+        dbscan = DBSCAN(eps=0.5, min_samples=5, metric='precomputed')
+        dbscan.fit(self._distance_matrix)
+
+        df = self._original_data.copy(deep=True)
+        df['cluster'] = dbscan.labels_
+
+        # Filter out noise points (cluster label -1)
+        df = df[df['cluster'] != -1]
+
+        self._new_data = pd.DataFrame()
+        unique_clusters = df['cluster'].unique()
+
+        for cluster in unique_clusters:
+            cluster_data = df[df['cluster'] == cluster]
+            sample_size = int(len(cluster_data) * self.percentage)
+            if len(cluster_data) > sample_size:
+                cluster_data = cluster_data.sample(n=sample_size, random_state=self.seed)
+            self._new_data = pd.concat([self._new_data, cluster_data], axis=0)
+
+        self._new_data.reset_index(drop=True, inplace=True)
+        self._new_data.drop(columns='cluster', inplace=True)
 
         # Density-Based Undersampling
     def density_based_undersample(self, k=20, reduction_factor=0.5):
