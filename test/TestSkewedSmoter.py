@@ -19,28 +19,30 @@ class TestSkewedSmoter(unittest.TestCase):
         self.target_column = 'target'
         self.smoter = SkewedSmoter(data=self.sample_data, target=self.target_column)
 
+
     def test_initialization(self):
         # Test if the object initializes correctly
-        self.assertTrue(self.smoter.get_data().equals(self.sample_data))
+        self.assertTrue(self.smoter.get_original_data().equals(self.sample_data))
         self.assertEqual(self.smoter.get_target(), self.target_column)
-        self.assertEqual(self.smoter.get_steepness(), 2)
-        self.assertEqual(self.smoter.get_skewness(), 0.5)
-        self.assertEqual(self.smoter.get_focus(), 0)
-        # After _calculate_bins, bins should be a numpy array
-        expected_bins = 17
-        self.assertEqual(self.smoter.bins.size, expected_bins)
+        self.assertEqual(self.smoter.get_steepness(), 1)
+        self.assertEqual(self.smoter.get_skewness(), 0.3)
+        self.assertEqual(self.smoter.get_focus(), None)
+        self.assertEqual(self.smoter.bins.size, 37)
 
     def test_skewed_distribution_sum(self):
         # Test if the skewed distribution sums to 1
+        self.smoter.set_focus(1)  # Set focus to a specific bin
         distribution = self.smoter.skewed_distribution()
         self.assertAlmostEqual(distribution.sum(), 1.0, places=5)
 
     def test_skewed_distribution_length(self):
         # Test if the distribution length matches the number of bins
+        self.smoter.set_focus(1)  # Set focus to a specific bin
         distribution = self.smoter.skewed_distribution()
         self.assertEqual(len(distribution), len(self.smoter.bins))
 
     def test_skewed_distribution_values(self):
+        self.smoter.set_focus(1)  # Set focus to a specific bin
         # Test if all distribution values are positive
         distribution = self.smoter.skewed_distribution()
         self.assertTrue(np.all(distribution >= 0))
@@ -48,25 +50,28 @@ class TestSkewedSmoter(unittest.TestCase):
         # Optionally, check if the distribution is skewed as expected
         # For example, highest weight should be around the focus
         max_index = np.argmax(distribution)
-        expected_focus_bin = self.smoter.focus
+        expected_focus_bin = self.smoter.bins[max_index]
+
         # Since bins are a range, the focus corresponds to index self.focus
         # Adjust if focus is not within the bin range
-        if 0 <= expected_focus_bin < len(distribution):
-            self.assertEqual(max_index, self.smoter.focus)
+        if min(self.smoter.bins) <= expected_focus_bin < max(self.smoter.bins):
+            self.assertEqual(expected_focus_bin, self.smoter.focus)
         else:
             # If focus is out of range, check if max_index is at one end
             self.assertIn(max_index, [0, len(distribution) - 1])
 
     def test_compute_bin_population_sum(self):
         # Test if the bin population sums to the total population
+        self.smoter.set_focus(1)  # Set focus to a specific bin
         population_distribution = self.smoter._compute_bin_population()
         max_diff = len(self.smoter.bins)
-        original_population = self.smoter.get_data().shape[0]
+        original_population = self.smoter.get_original_data().shape[0]
         synth_population = population_distribution.sum()
         self.assertTrue(abs(original_population - synth_population) <= max_diff)
 
     def test_compute_bin_population_type(self):
         # Test if the population distribution contains integers
+        self.smoter.set_focus(1)  # Set focus to a specific bin
         population_distribution = self.smoter._compute_bin_population()
         self.assertTrue(np.issubdtype(population_distribution.dtype, np.integer))
 
@@ -78,7 +83,7 @@ class TestSkewedSmoter(unittest.TestCase):
             'target': np.random.uniform(0, 8, 50)
         })
         self.smoter.set_data(new_data)
-        self.assertTrue(self.smoter.get_data().equals(new_data))
+        self.assertTrue(self.smoter.get_original_data().equals(new_data))
 
         # Test getters and setters for target
         new_target = 'new_target'
@@ -133,7 +138,8 @@ class TestSkewedSmoter(unittest.TestCase):
             'target': [4.0] * 10  # Only one unique bin
         })
         smoter_single = SkewedSmoter(data=single_bin_data, target='target')
-        smoter_single._calculate_bins()
+        #smoter_single._calculate_bins()
+        smoter_single.set_focus(4.0)
         distribution = smoter_single.skewed_distribution()
         self.assertEqual(len(distribution), 1)
         self.assertEqual(distribution[0], 1.0)
@@ -164,11 +170,13 @@ class TestSkewedSmoter(unittest.TestCase):
             'new_target': np.random.uniform(0, 8, 50)  # Continuous target in [0,8]
         })
         self.smoter.set_data(new_data).set_target('new_target')
-        expected_bins = 17
+        expected_bins = 37
         self.assertEqual(len(self.smoter.bins), expected_bins)
 
     def test_data_balancing(self):
-        before_population = self.smoter.get_data()[self.target_column].copy(deep=True)
+        self.smoter.set_focus(1)  # Set focus to a specific bin
+        self.smoter.set_bin_width(1)
+        before_population = self.smoter.get_original_data()[self.target_column].copy(deep=True)
         new_data = self.smoter.generate_synthetic_data()
         after_population = new_data[self.target_column].copy(deep=True)
 

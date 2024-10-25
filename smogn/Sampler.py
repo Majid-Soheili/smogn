@@ -28,6 +28,10 @@ class Sampler:
         self.seed = seed
         self.nk = nk
         self.verbose = verbose
+        self._logger = logging.getLogger("Sampler")
+        if not self._logger.hasHandlers():
+            self._logger.addHandler(logging.StreamHandler())
+            self._logger.setLevel(logging.DEBUG)
 
         self._new_data = pd.DataFrame()
         self._distance_matrix = None
