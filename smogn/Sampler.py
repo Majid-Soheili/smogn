@@ -110,13 +110,11 @@ class Sampler:
 
         mask = ~np.eye(self._distance_matrix.shape[0], dtype=bool)
         non_diagonal = self._distance_matrix[mask]
-
         dist_min = non_diagonal.min()  # Typically > 0
-        if dist_min == 0:
-            self._logger.warning("Minimum distance is zero. Normalizing distance matrix.")
-            dist_min = 1e-8
-
         dist_max = non_diagonal.max()
+        if dist_max == 0 :
+            raise ValueError("All distances are zero. Cannot normalize.")
+
         norm_dist = (self._distance_matrix - dist_min) / (dist_max - dist_min)
         np.fill_diagonal(norm_dist, 0)
         self._distance_matrix = norm_dist
