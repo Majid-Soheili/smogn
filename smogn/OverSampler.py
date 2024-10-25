@@ -110,10 +110,10 @@ class OverSampler:
         if self._schema.numerical_columns_count > 0 and self._schema.nominal_columns_count == 0:
             # Case 1: All features are numeric
             # Compute Euclidean distance using vectorized operations
-            s = np.sum(data_num_array ** 2, axis=1)
-            self._distance_matrix = np.sqrt(
-                s[:, np.newaxis] + s[np.newaxis, :] - 2 * np.dot(data_num_array, data_num_array.T)
-            )
+            diff_num = (data_num_array[:, np.newaxis, :] - data_num_array[np.newaxis, :, :]) / range_num  # Normalize differences
+            diff_num **= 2  # Square differences
+            sum_diff_num = np.sum(diff_num, axis=2)
+            self._distance_matrix = np.sqrt(sum_diff_num)
 
         elif self._schema.nominal_columns_count > 0 and self._schema.numerical_columns_count == 0:
             # Case 2: All features are nominal
