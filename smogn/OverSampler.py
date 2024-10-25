@@ -156,9 +156,6 @@ class OverSampler:
             #max_dist[i] = box_plot_stats(self._distance_matrix[i])["stats"][2] / 2
             max_dist[i] = np.median(self._distance_matrix[i]) / 2
 
-            max_dist[i] = box_plot_stats(self._distance_matrix[i])["stats"][2] / 2
-
-        #self._max_distance = np.median(np.sort(self._distance_matrix)[:, -self._nk // 2])
         self._max_distance = max_dist
 
     def _define_base_obs_index(self):
