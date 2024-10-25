@@ -112,6 +112,10 @@ class Sampler:
         non_diagonal = self._distance_matrix[mask]
 
         dist_min = non_diagonal.min()  # Typically > 0
+        if dist_min == 0:
+            self._logger.warning("Minimum distance is zero. Normalizing distance matrix.")
+            dist_min = 1e-8
+
         dist_max = non_diagonal.max()
         norm_dist = (self._distance_matrix - dist_min) / (dist_max - dist_min)
         np.fill_diagonal(norm_dist, 0)
