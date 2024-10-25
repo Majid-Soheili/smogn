@@ -49,6 +49,11 @@ class UnderSampler(Sampler):
         # Filter out noise points (cluster label -1)
         df = df[df['cluster'] != -1]
 
+        if len(df) == 0:
+            self._logger.warning("No clusters found. Returning random sample.")
+            self._new_data = None
+            return
+
         self._new_data = pd.DataFrame()
         unique_clusters = df['cluster'].unique()
 
