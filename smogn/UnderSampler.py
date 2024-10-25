@@ -38,7 +38,9 @@ class UnderSampler(Sampler):
     def _cluster_sampling(self):
 
         self._compute_distance_matrix()
-        dbscan = DBSCAN(eps=0.5, min_samples=5, metric='precomputed')
+        self._normalize_distance_matrix()
+
+        dbscan = DBSCAN(eps=0.5, min_samples=self.nk, metric='precomputed')
         dbscan.fit(self._distance_matrix)
 
         df = self._original_data.copy(deep=True)
