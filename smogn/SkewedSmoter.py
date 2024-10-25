@@ -26,6 +26,7 @@ class SkewedSmoter:
         self.bins = None
         self.bin_width = 0.5
         self.feat_dtypes_orig = [self.data.iloc[:, j].dtype for j in range(self.data.shape[1])]
+        self._remove_duplicated_rows()
         self._calculate_bins()
 
         #self._init()
@@ -123,6 +124,13 @@ class SkewedSmoter:
         max_value = int(round(max_value, 0))
         step = self.bin_width
         self.bins = np.arange(min_value, max_value + step, step)
+
+    def _remove_duplicated_rows(self):
+        n_duplicates = self.data.duplicated().sum()
+        if n_duplicates > 0:
+            self._logger.warning(f"Removing {n_duplicates} duplicated rows")
+        self.data = self.data.drop_duplicates()
+        return self
 
    # Public Getters and Setters ========================================
     def get_original_data(self):
