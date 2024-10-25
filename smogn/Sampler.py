@@ -105,6 +105,18 @@ class Sampler:
             self._distance_matrix = None
             raise ValueError("No features present in the data.")
 
+    def _normalize_distance_matrix(self):
+        # Create a mask to exclude diagonal elements
+
+        mask = ~np.eye(self._distance_matrix.shape[0], dtype=bool)
+        non_diagonal = self._distance_matrix[mask]
+
+        dist_min = non_diagonal.min()  # Typically > 0
+        dist_max = non_diagonal.max()
+        norm_dist = (self._distance_matrix - dist_min) / (dist_max - dist_min)
+        np.fill_diagonal(norm_dist, 0)
+        self._distance_matrix = norm_dist
+
     def _remove_nan_rows(self):
         self._original_data.dropna(inplace=True)
 
