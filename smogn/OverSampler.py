@@ -153,6 +153,8 @@ class OverSampler:
         n = self._original_data.shape[0]
         max_dist = [None] * n
         for i in range(n):
+            #max_dist[i] = box_plot_stats(self._distance_matrix[i])["stats"][2] / 2
+            max_dist[i] = np.median(self._distance_matrix[i]) / 2
 
             max_dist[i] = box_plot_stats(self._distance_matrix[i])["stats"][2] / 2
 
