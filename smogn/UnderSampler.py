@@ -40,7 +40,7 @@ class UnderSampler(Sampler):
         self._compute_distance_matrix()
         self._normalize_distance_matrix()
 
-        dbscan = DBSCAN(eps=0.5, min_samples=self.nk, metric='precomputed')
+        dbscan = DBSCAN(eps=0.2, min_samples=self.nk, metric='precomputed')
         dbscan.fit(self._distance_matrix)
 
         df = self._original_data.copy(deep=True)
@@ -61,7 +61,7 @@ class UnderSampler(Sampler):
             cluster_data = df[df['cluster'] == cluster]
             sample_size = int(len(cluster_data) * self.percentage)
             if len(cluster_data) > sample_size:
-                cluster_data = cluster_data.sample(n=sample_size, random_state=self.seed)
+                cluster_data = cluster_data.sample(n=sample_size, random_state=self.seed, replace=False)
             self._new_data = pd.concat([self._new_data, cluster_data], axis=0)
 
         self._new_data.reset_index(drop=True, inplace=True)
