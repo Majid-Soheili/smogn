@@ -22,9 +22,11 @@ class SkewedSmoter:
         self.synthetic_data = pd.DataFrame()
         self.steepness = 1
         self.skewness = 0.3
-        self.focus = 0
+        self.focus = None
         self.bins = None
         self.bin_width = 0.5
+        self.feat_dtypes_orig = [self.data.iloc[:, j].dtype for j in range(self.data.shape[1])]
+        self._calculate_bins()
 
         self._init()
 
@@ -68,8 +70,10 @@ class SkewedSmoter:
                 synth = under_sampler.provide_under_sampled_data()
 
             synthetic_data = pd.concat([synthetic_data, synth])
-        return synthetic_data
 
+        self.synthetic_data = synthetic_data
+        self._restore_original_data_types()
+        return self.synthetic_data
 
     # Function to generate a skewed distribution using log-normal
     def skewed_distribution(self):
@@ -94,6 +98,23 @@ class SkewedSmoter:
 
     # Private Methods ===============================================
 
+    def _restore_original_data_types(self):
+        result_df = pd.DataFrame()
+        d = len(self.data.columns)
+        for j in range(d):
+            # for category based on the original data type it can handle it
+            dtype_orig = self.feat_dtypes_orig[j]
+            column_name = self.synthetic_data.columns[j]
+            column = self.synthetic_data[column_name]
+
+            if dtype_orig in [np.int64, pd.Int64Dtype()]:
+                column = column.round()
+
+            column = column.astype(dtype_orig)
+            result_df = pd.concat([result_df, column], axis=1)
+
+        self.synthetic_data = result_df
+
     def _calculate_bins(self):
 
         min_value = self.data[self.target].min()
@@ -104,8 +125,10 @@ class SkewedSmoter:
         self.bins = np.arange(min_value, max_value + step, step)
 
    # Public Getters and Setters ========================================
-    def get_data(self):
+    def get_original_data(self):
         return self.data
+    def get_synthetic_data(self):
+        return self.synthetic_data
 
     def set_data(self, data):
         self.data = data
@@ -137,4 +160,8 @@ class SkewedSmoter:
 
     def set_focus(self, focus):
         self.focus = focus
+        return self
+
+    def set_bin_width(self, bin_width):
+        self.bin_width = bin_width
         return self
