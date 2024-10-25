@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import logging
 
+from socks import method
+
 from smogn.OverSampler import OverSampler
 from smogn.UnderSampler import UnderSampler
 
@@ -54,11 +56,14 @@ class SkewedSmoter:
 
                 over_sampler = OverSampler(self.data, index, percentage=rate, perturbation=0.02, nk=5, verbose=True)
                 synth = over_sampler.generate_synthetic_data()
+                if len(synth) > 0:
+                    logging.info(f"Generated {len(synth)} synthetic samples for bin {i}")
+                    continue
                 synth = pd.concat([self.data.iloc[index, :].copy(deep=True), synth])
 
             else:
                 # Undersample the bin
-                under_sampler = UnderSampler(self.data, index, percentage=rate, seed=None)
+                under_sampler = UnderSampler(self.data, index, method= "cluster", percentage=rate, seed=None)
                 synth = under_sampler.provide_under_sampled_data()
 
             synthetic_data = pd.concat([synthetic_data, synth])
