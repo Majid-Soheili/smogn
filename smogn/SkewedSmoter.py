@@ -14,8 +14,13 @@ class SkewedSmoter:
         self.data = data
         self.target = target
 
-        # Log-Normal Distribution Function Parameters
-        self.steepness = 2
+        self._logger = logging.getLogger("SkewedSmoter")
+        if not self._logger.hasHandlers():
+            self._logger.addHandler(logging.StreamHandler())
+            self._logger.setLevel(logging.DEBUG)
+
+        self.synthetic_data = pd.DataFrame()
+        self.steepness = 1
         self.skewness = 0.3
         self.focus = 0
         self.bins = None
@@ -57,7 +62,7 @@ class SkewedSmoter:
                 over_sampler = OverSampler(self.data, index, percentage=rate, perturbation=0.02, nk=5, verbose=True)
                 synth = over_sampler.generate_synthetic_data()
                 if len(synth) > 0:
-                    logging.info(f"Generated {len(synth)} synthetic samples for bin {i}")
+                    self._logger.info(f"Generated {len(synth)} synthetic samples for bin {i}")
                     continue
                 synth = pd.concat([self.data.iloc[index, :].copy(deep=True), synth])
 
