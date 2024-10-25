@@ -28,7 +28,7 @@ class SkewedSmoter:
         self.feat_dtypes_orig = [self.data.iloc[:, j].dtype for j in range(self.data.shape[1])]
         self._calculate_bins()
 
-        self._init()
+        #self._init()
 
 
     def _init(self):
