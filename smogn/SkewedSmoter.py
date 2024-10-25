@@ -73,6 +73,11 @@ class SkewedSmoter:
 
     # Function to generate a skewed distribution using log-normal
     def skewed_distribution(self):
+        if self.focus is None:
+            raise ValueError("Focus index is not set")
+        elif self.focus not in self.bins:
+            raise ValueError("Focus index is not in the bins")
+
         findex = np.where(self.bins == self.focus)[0]
         x = np.arange(len(self.bins)) - findex
         # Use a log-normal distribution centered at the focus index
