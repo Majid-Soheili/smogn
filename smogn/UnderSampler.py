@@ -2,6 +2,7 @@ import logging
 from sklearn.cluster import DBSCAN
 import pandas as pd
 import numpy as np
+from sklearn_extra.cluster import KMedoids
 
 from smogn.Sampler import Sampler
 
@@ -38,6 +39,8 @@ class UnderSampler(Sampler):
             self._random_sampling()
         elif self.method == "cluster":
             self._cluster_sampling()
+        elif self.method == "cluster_med":
+            self._cluster_med_sampling()
         elif self.method == "density":
             self.density_based_undersample()
         else:
@@ -82,6 +85,23 @@ class UnderSampler(Sampler):
 
         self._new_data.reset_index(drop=True, inplace=True)
         self._new_data.drop(columns='cluster', inplace=True)
+
+    def _cluster_med_sampling(self):
+
+        self._compute_distance_matrix()
+        self._normalize_distance_matrix()
+
+        # Maximum number of clusters
+        num_clusters = self.num_new_data
+        num_clusters = int(num_clusters)
+        kmedoids = KMedoids(n_clusters=num_clusters, metric='precomputed', random_state=self.seed)
+        # Fit the model using the distance matrix
+        kmedoids.fit(self._distance_matrix)
+        # Retrieve the cluster labels and medoid indices
+        labels = kmedoids.labels_
+        medoid_indices = kmedoids.medoid_indices_
+        self._new_data = self._original_data.iloc[medoid_indices, :].copy(deep=True)
+
 
     # Density-Based Undersampling
     def density_based_undersample(self, k=20, reduction_factor=0.5):
