@@ -28,6 +28,7 @@ class UnderSampler(Sampler):
         else:
             raise ValueError("Invalid method")
 
+        self._int_to_categorical()
         return self._new_data
 
     def _random_sampling(self):
