@@ -49,17 +49,17 @@ class UnderSampler(Sampler):
         # Filter out noise points (cluster label -1)
         df = df[df['cluster'] != -1]
 
-        if len(df) == 0:
-            self._logger.warning("No clusters found. Returning random sample.")
-            self._new_data = None
-            return
+        if len(df) == 0 or self.num_new_data > len(df):
+            self._logger.warning("The outliers are too much, consider changing epsilon or min_samples of DBSCAN.")
+            self._logger.warning("Returning random sample.")
+            return self._random_sampling()
 
         self._new_data = pd.DataFrame()
         unique_clusters = df['cluster'].unique()
-
+        sample_rate = (self.num_new_data / len(df))
         for cluster in unique_clusters:
             cluster_data = df[df['cluster'] == cluster]
-            sample_size = int(len(cluster_data) * self.percentage)
+            sample_size = int(round(len(cluster_data) * sample_rate))
             if len(cluster_data) > sample_size:
                 cluster_data = cluster_data.sample(n=sample_size, random_state=self.seed, replace=False)
             self._new_data = pd.concat([self._new_data, cluster_data], axis=0)
