@@ -58,6 +58,8 @@ class Sampler:
         # As a rule, the columns term refer to all columns in the data frame including the target column
         # and the features term refer to all columns in the data frame except the target column
 
+        self._logger.info("Computing the distance matrix...")
+
         data_num_array = self._original_data[self._schema.numerical_columns].to_numpy()
         data_nom_array = self._original_data[self._schema.nominal_columns].to_numpy()
         range_num = self._schema.column_range_values[self._schema.numerical_columns_mask]
@@ -104,6 +106,8 @@ class Sampler:
             # No features present
             self._distance_matrix = None
             raise ValueError("No features present in the data.")
+
+        self._logger.info("Distance matrix computed.")
 
     def _normalize_distance_matrix(self):
         # Create a mask to exclude diagonal elements
