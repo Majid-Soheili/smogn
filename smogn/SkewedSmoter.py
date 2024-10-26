@@ -1,23 +1,25 @@
+import sys
 import numpy as np
 import pandas as pd
 import logging
-
-from socks import method
-
 from smogn.OverSampler import OverSampler
 from smogn.UnderSampler import UnderSampler
 
 class SkewedSmoter:
-    def __init__(self, data, target, verbose=1):
+    def __init__(self, data, target, verbose=1, seed = 123):
 
         # General parameters
         self.data = data
         self.target = target
 
         self._logger = logging.getLogger("SkewedSmoter")
-        if not self._logger.hasHandlers():
-            self._logger.addHandler(logging.StreamHandler())
-            self._logger.setLevel(logging.DEBUG)
+        self._logger.setLevel(logging.DEBUG if verbose > 0 else logging.WARNING)
+        self._logger.propagate = False  # Prevent propagation to root logger
+
+        if not self._logger.handlers:
+            handler = logging.StreamHandler()
+            handler.setFormatter(logging.Formatter('%(name)s - %(levelname)s - %(message)s'))
+            self._logger.addHandler(handler)
 
         self.synthetic_data = pd.DataFrame()
         self.steepness = 1
@@ -26,7 +28,12 @@ class SkewedSmoter:
         self.bins = None
         self.synth_bins_populations = None
         self.bin_width = 0.5
+
         self.verbose = verbose
+        self.seed = seed
+        np.random.seed(seed)
+
+
         self.feat_dtypes_orig = [self.data.iloc[:, j].dtype for j in range(self.data.shape[1])]
         self._remove_duplicated_rows()
         self._put_target_column_last()
@@ -56,25 +63,25 @@ class SkewedSmoter:
             if rate > 1: # Oversample the bin
 
                 synthetic_data_list.append(self.data.iloc[index, :])
-                over_sampler = OverSampler(self.data, index, percentage=rate, perturbation=0.02, nk=5, verbose=True)
+                over_sampler = OverSampler(self.data, index, percentage=rate, perturbation=0.02, nk=5, verbose=True, seed=self.seed)
                 synth = over_sampler.generate_synthetic_data()
 
                 if self.verbose > 0:
                     if synth is None or len(synth) == 0:
-                        self._logger.info(f"Generated 0 synthetic samples for bin {i}")
+                        self._logger.debug(f"Generated 0 synthetic samples for bin {i}")
                     else:
-                        self._logger.info(f"Generated {synth.shape[0]} synthetic samples for bin {i}")
+                        self._logger.debug(f"Generated {synth.shape[0]} synthetic samples for bin {i}")
 
             else: # Undersample the bin
 
-                under_sampler = UnderSampler(self.data, index, method= "cluster", percentage=rate, seed=None)
+                under_sampler = UnderSampler(self.data, index, method= "cluster", percentage=rate, seed=self.seed, verbose=self.verbose)
                 synth = under_sampler.provide_under_sampled_data()
 
                 if self.verbose > 0:
                     if synth is None or len(synth) == 0:
-                        self._logger.info(f"No samples selected for bin {i}")
+                        self._logger.debug(f"No samples selected for bin {i}")
                     else:
-                        self._logger.info(f"Selected {synth.shape[0]} samples for bin {i}")
+                        self._logger.debug(f"Selected {synth.shape[0]} samples for bin {i}")
 
             if synth is not None and len(synth) > 0:
                 synthetic_data_list.append(synth)
