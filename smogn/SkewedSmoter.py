@@ -74,7 +74,7 @@ class SkewedSmoter:
 
             else: # Undersample the bin
 
-                under_sampler = UnderSampler(self.data, index, method= "cluster", percentage=rate, seed=self.seed, verbose=self.verbose)
+                under_sampler = UnderSampler(self.data, index, method= "cluster_med", percentage=rate, seed=self.seed, verbose=self.verbose)
                 synth = under_sampler.provide_under_sampled_data()
 
                 if self.verbose > 0:
