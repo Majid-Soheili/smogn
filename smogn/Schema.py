@@ -22,7 +22,7 @@ class Schema:
 
     column_names:np.ndarray = field(default_factory=lambda: np.array([]))
     column_indexes:np.ndarray = field(default_factory=lambda: np.array([]))
-    data_types:np.ndarray = field(default_factory=lambda: np.array([]))
+    data_types:dict = field(default_factory=lambda: {})
 
     # Range and Standard Deviation Members =====================================
 
@@ -95,7 +95,7 @@ class Schema:
         self.features_index = np.arange(len(self.features_name))
 
 
-        self.data_types = np.array(data.dtypes)
+        self.data_types = data.dtypes.to_dict()
 
         # We assume all columns are numeric
         #if not all([dtype in self.__num_dtypes for dtype in self.data_types]):
