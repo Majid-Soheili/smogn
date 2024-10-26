@@ -59,7 +59,7 @@ class OverSampler:
 
     ## == Public methods == ##
 
-    def generate_synthetic_data(self):
+    def generate_synthetic_data(self)-> pd.DataFrame:
         # Generate synthetic data
         # For each base observation, generate nk synthetic observations
         # For each synthetic observation
