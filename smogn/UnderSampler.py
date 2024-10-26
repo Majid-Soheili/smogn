@@ -1,3 +1,4 @@
+import logging
 from sklearn.cluster import DBSCAN
 import pandas as pd
 import numpy as np
@@ -6,7 +7,7 @@ from smogn.Sampler import Sampler
 
 
 class UnderSampler(Sampler):
-    def __init__(self, data, index, percentage, method="random", seed=None):
+    def __init__(self, data, index, percentage, method="random", verbose = 1, seed=None):
 
         """
         :param data (pd.DataFrame):
@@ -15,7 +16,20 @@ class UnderSampler(Sampler):
         :param method:  it should be either "random", "cluster" or "density"
         :param seed:  it should be an integer and used for reproducibility
         """
+
+        self._logger = logging.getLogger("UnderSampler")
+        self._logger.setLevel(logging.DEBUG if verbose > 0 else logging.WARNING)
+        self._logger.propagate = False  # Prevent propagation to root logger
+
+        if not self._logger.handlers:
+            handler = logging.StreamHandler()
+            handler.setFormatter(logging.Formatter('%(name)s - %(levelname)s - %(message)s'))
+            self._logger.addHandler(handler)
+
+        self.verbose = verbose
+        self.seed = seed
         self.method = method
+        np.random.seed(seed)
         super().__init__(data, index, percentage, seed=seed)
 
     def provide_under_sampled_data(self):
@@ -69,8 +83,7 @@ class UnderSampler(Sampler):
         self._new_data.reset_index(drop=True, inplace=True)
         self._new_data.drop(columns='cluster', inplace=True)
 
-        # Density-Based Undersampling
-
+    # Density-Based Undersampling
     def density_based_undersample(self, k=20, reduction_factor=0.5):
 
         # Step 1: Compute mean distance to k nearest neighbors for each sample
