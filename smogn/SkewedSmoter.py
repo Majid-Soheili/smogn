@@ -57,11 +57,11 @@ class SkewedSmoter:
 
             rate = synthetic_bin_population / original_bin_population
             if synthetic_bin_population > original_bin_population:
-                # Oversample the bin
 
+                # Oversample the bin
                 over_sampler = OverSampler(self.data, index, percentage=rate, perturbation=0.02, nk=5, verbose=True)
                 synth = over_sampler.generate_synthetic_data()
-                if len(synth) > 0:
+                if synth is None or len(synth) == 0:
                     self._logger.info(f"Generated {len(synth)} synthetic samples for bin {i}")
                     continue
                 synth = pd.concat([self.data.iloc[index, :].copy(deep=True), synth])
