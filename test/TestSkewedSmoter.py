@@ -12,10 +12,10 @@ class TestSkewedSmoter(unittest.TestCase):
         # Create a sample dataset with multiple features and a continuous target
         np.random.seed(42)  # For reproducibility
         self.sample_data = pd.DataFrame({
-            'feature1': np.random.uniform(0, 1, 100),
-            'feature2': np.random.uniform(0, 1, 100),
-            'feature3': pd.Categorical(np.random.randint(1, 13, 100)),
-            'target': np.random.lognormal(mean=1.0, sigma=0.5, size=100)  # Adjust mean and sigma as needed
+            'feature1': np.random.uniform(0, 1, 500),
+            'feature2': np.random.uniform(0, 1, 500),
+            'feature3': pd.Categorical(np.random.randint(1, 13, 500)),
+            'target': np.random.lognormal(mean=1.0, sigma=0.5, size=500)  # Adjust mean and sigma as needed
         })
         self.sample_data['feature3'] = self.sample_data['feature3'].astype('category')
         self.target_column = 'target'
@@ -29,7 +29,7 @@ class TestSkewedSmoter(unittest.TestCase):
         self.assertEqual(self.smoter.get_steepness(), 1)
         self.assertEqual(self.smoter.get_skewness(), 0.3)
         self.assertEqual(self.smoter.get_focus(), None)
-        self.assertEqual(self.smoter.bins.size, 25)
+        self.assertEqual(self.smoter.bins.size, 23)
 
     def test_skewed_distribution_sum(self):
         # Test if the skewed distribution sums to 1
@@ -65,7 +65,8 @@ class TestSkewedSmoter(unittest.TestCase):
     def test_compute_bin_population_sum(self):
         # Test if the bin population sums to the total population
         self.smoter.set_focus(1)  # Set focus to a specific bin
-        population_distribution = self.smoter._compute_bin_population()
+        self.smoter._compute_bin_population()
+        population_distribution = self.smoter.synth_bins_populations
         max_diff = len(self.smoter.bins)
         original_population = self.smoter.get_original_data().shape[0]
         synth_population = population_distribution.sum()
@@ -74,7 +75,8 @@ class TestSkewedSmoter(unittest.TestCase):
     def test_compute_bin_population_type(self):
         # Test if the population distribution contains integers
         self.smoter.set_focus(1)  # Set focus to a specific bin
-        population_distribution = self.smoter._compute_bin_population()
+        self.smoter._compute_bin_population()
+        population_distribution = self.smoter.synth_bins_populations
         self.assertTrue(np.issubdtype(population_distribution.dtype, np.integer))
 
     def test_getters_setters(self):
@@ -111,7 +113,7 @@ class TestSkewedSmoter(unittest.TestCase):
     def test_calculate_bins(self):
         # Test the _calculate_bins method with specific data
         # Modify the target to have a known range
-        self.smoter.data[self.target_column] = np.repeat([1.0, 2.5, 3.0, 4.5, 5.0], 20)
+        self.smoter.data[self.target_column] = np.repeat([1.0, 2.5, 3.0, 4.5, 5.0], 100)
         self.smoter._calculate_bins()
         expected_bins = np.arange(1, 5 + 0.5, 0.5)
         np.testing.assert_array_equal(self.smoter.bins, expected_bins)
@@ -178,7 +180,7 @@ class TestSkewedSmoter(unittest.TestCase):
             'new_target': np.random.uniform(0, 8, 50)  # Continuous target in [0,8]
         })
         self.smoter.set_data(new_data).set_target('new_target')
-        expected_bins = 25
+        expected_bins = 23
         self.assertEqual(len(self.smoter.bins), expected_bins)
 
     def test_data_balancing(self):
