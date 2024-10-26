@@ -138,10 +138,16 @@ class Sampler:
             self._original_data[col] = self._original_data[col].astype(int)
 
     def _int_to_categorical(self):
+
         # Convert integers to categorical columns
+        if self._new_data is None:
+            return
+
         for col, unique_values in self._schema.nominal_unique_values.items():
             mapping = {v: k for v, k in enumerate(unique_values)}
             self._new_data[col] = self._new_data[col].map(mapping)
+            if self._schema.data_types[col] == "category":
+                self._new_data[col] = pd.Categorical(self._new_data[col], categories=unique_values)
 
     def _reconstruct_synth_schema(self):
         # Reconstruct the data
