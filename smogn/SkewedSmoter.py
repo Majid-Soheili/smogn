@@ -8,7 +8,7 @@ from smogn.OverSampler import OverSampler
 from smogn.UnderSampler import UnderSampler
 
 class SkewedSmoter:
-    def __init__(self, data, target):
+    def __init__(self, data, target, verbose=1):
 
         # General parameters
         self.data = data
@@ -24,14 +24,13 @@ class SkewedSmoter:
         self.skewness = 0.3
         self.focus = None
         self.bins = None
+        self.synth_bins_populations = None
         self.bin_width = 0.5
+        self.verbose = verbose
         self.feat_dtypes_orig = [self.data.iloc[:, j].dtype for j in range(self.data.shape[1])]
         self._remove_duplicated_rows()
         self._put_target_column_last()
         self._calculate_bins()
-
-        #self._init()
-
 
     def _init(self):
 
@@ -43,41 +42,45 @@ class SkewedSmoter:
         self._compute_bin_population()
 
     def generate_synthetic_data(self):
-        # Generate synthetic data for each bin
-        synth_bins_populations = self._compute_bin_population()
-        synthetic_data = pd.DataFrame()
-        for i in range(len(self.bins) - 1):
-            index = self.data[(self.data[self.target] >= self.bins[i]) & (self.data[self.target] < self.bins[i + 1])].index
-            original_bin_population = len(index)
-            synthetic_bin_population = synth_bins_populations[i]
 
-            if original_bin_population <= 5:
-                self._logger.info(f"Bin {i} has less than 5 samples. Skipping...")
+        self._compute_bin_population()
+        synthetic_data_list = []
+
+        for i in range(len(self.bins) - 1):
+
+            index, rate = self._handle_bin_population(i)
+
+            if index is None: # the bin is not valid for sampling
                 continue
 
-            rate = synthetic_bin_population / original_bin_population
-            if synthetic_bin_population > original_bin_population:
+            if rate > 1: # Oversample the bin
 
-                # Oversample the bin
+                synthetic_data_list.append(self.data.iloc[index, :])
                 over_sampler = OverSampler(self.data, index, percentage=rate, perturbation=0.02, nk=5, verbose=True)
                 synth = over_sampler.generate_synthetic_data()
-                if synth is None or len(synth) == 0:
-                    self._logger.info(f"Generated 0 synthetic samples for bin {i}")
-                    continue
-                synth = pd.concat([self.data.iloc[index, :], synth])
 
-            else:
+                if self.verbose > 0:
+                    if synth is None or len(synth) == 0:
+                        self._logger.info(f"Generated 0 synthetic samples for bin {i}")
+                    else:
+                        self._logger.info(f"Generated {synth.shape[0]} synthetic samples for bin {i}")
 
-                # Undersample the bin
+            else: # Undersample the bin
+
                 under_sampler = UnderSampler(self.data, index, method= "cluster", percentage=rate, seed=None)
                 synth = under_sampler.provide_under_sampled_data()
-                if synth is None or len(synth) == 0:
-                    self._logger.info(f"No samples selected for bin {i}")
-                    continue
 
-            synthetic_data = pd.concat([synthetic_data, synth])
+                if self.verbose > 0:
+                    if synth is None or len(synth) == 0:
+                        self._logger.info(f"No samples selected for bin {i}")
+                    else:
+                        self._logger.info(f"Selected {synth.shape[0]} samples for bin {i}")
 
-        self.synthetic_data = synthetic_data
+            if synth is not None and len(synth) > 0:
+                synthetic_data_list.append(synth)
+
+
+        self.synthetic_data = pd.concat(synthetic_data_list, ignore_index=True)
         self._restore_original_data_types()
         return self.synthetic_data
 
@@ -100,9 +103,23 @@ class SkewedSmoter:
         weights = self.skewed_distribution()
         population = self.data.shape[0]
         population_distribution = (weights * population).astype(int)
-        return population_distribution
+        self.synth_bins_populations = population_distribution
 
     # Private Methods ===============================================
+
+    def _handle_bin_population(self, idx):
+        lower_bound = self.bins[idx]
+        upper_bound = self.bins[idx + 1]
+        index = self.data[(self.data[self.target] >= lower_bound) & (self.data[self.target] < upper_bound)].index
+        original_bin_population = len(index)
+        synthetic_bin_population = self.synth_bins_populations[idx]
+
+        if original_bin_population <= 5:
+            self._logger.warning(f"Bin {idx} has less than 5 samples. Skipping...")
+            return None, None
+        else:
+            rate = synthetic_bin_population / original_bin_population
+            return index, rate
 
     def _restore_original_data_types(self):
         result_df = pd.DataFrame()
