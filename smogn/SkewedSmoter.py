@@ -31,6 +31,7 @@ class SkewedSmoter:
 
         self.verbose = verbose
         self.seed = seed
+        self.under_method = "cluster"
         np.random.seed(seed)
 
 
@@ -74,7 +75,7 @@ class SkewedSmoter:
 
             else: # Undersample the bin
 
-                under_sampler = UnderSampler(self.data, index, method= "cluster_med", percentage=rate, seed=self.seed, verbose=self.verbose)
+                under_sampler = UnderSampler(self.data, index, method= self.under_method, percentage=rate, seed=self.seed, verbose=self.verbose)
                 synth = under_sampler.provide_under_sampled_data()
 
                 if self.verbose > 0:
@@ -209,4 +210,8 @@ class SkewedSmoter:
 
     def set_bin_width(self, bin_width):
         self.bin_width = bin_width
+        return self
+
+    def set_under_method(self, method):
+        self.under_method = method
         return self
