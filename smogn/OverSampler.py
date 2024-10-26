@@ -285,9 +285,9 @@ class OverSampler:
 
     def _reconstruct_synth_schema(self):
         # Reconstruct the data
-        self._int_to_categorical()
         self._checking_non_negative_columns()
         self._checking_constant_columns()
+        self._int_to_categorical()
 
     def _checking_non_negative_columns(self):
         # Check teh columns for negative values which they should not have
@@ -314,6 +314,8 @@ class OverSampler:
         for col, unique_values in self._schema.nominal_unique_values.items():
             mapping = {v: k for v, k in enumerate(unique_values)}
             self._synth_data[col] = self._synth_data[col].map(mapping)
+            if self._schema.data_types[col] == "category":
+                self._synth_data[col] = pd.Categorical(self._synth_data[col], categories=unique_values)
 
     def _define_schema(self):
         self._schema = Schema()
