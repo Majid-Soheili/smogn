@@ -27,6 +27,7 @@ class SkewedSmoter:
         self.bin_width = 0.5
         self.feat_dtypes_orig = [self.data.iloc[:, j].dtype for j in range(self.data.shape[1])]
         self._remove_duplicated_rows()
+        self._put_target_column_last()
         self._calculate_bins()
 
         #self._init()
@@ -130,6 +131,14 @@ class SkewedSmoter:
         if n_duplicates > 0:
             self._logger.warning(f"Removing {n_duplicates} duplicated rows")
         self.data = self.data.drop_duplicates()
+        return self
+
+    # a function to put target column in the last column
+    def _put_target_column_last(self):
+        cols = self.data.columns.tolist()
+        cols.remove(self.target)
+        cols.append(self.target)
+        self.data = self.data[cols]
         return self
 
    # Public Getters and Setters ========================================
