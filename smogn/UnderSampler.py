@@ -17,6 +17,7 @@ class UnderSampler(Sampler):
         """
         self.method = method
         super().__init__(data, index, percentage, seed=seed)
+
     def provide_under_sampled_data(self):
 
         if self.method == "random":
@@ -32,7 +33,7 @@ class UnderSampler(Sampler):
         return self._new_data
 
     def _random_sampling(self):
-        # Randomly sample the datas
+        # Randomly sample the data
         self._new_data = self._original_data.sample(n=self.num_new_data, replace=False).copy(deep=True)
         self._new_data.reset_index(drop=True, inplace=True)
 
@@ -69,6 +70,7 @@ class UnderSampler(Sampler):
         self._new_data.drop(columns='cluster', inplace=True)
 
         # Density-Based Undersampling
+
     def density_based_undersample(self, k=20, reduction_factor=0.5):
 
         # Step 1: Compute mean distance to k nearest neighbors for each sample
