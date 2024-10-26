@@ -52,7 +52,7 @@ class SkewedSmoter:
             synthetic_bin_population = synth_bins_populations[i]
 
             if original_bin_population <= 5:
-                self._logger.warning(f"Bin {i} has less than 5 samples. Skipping...")
+                self._logger.info(f"Bin {i} has less than 5 samples. Skipping...")
                 continue
 
             rate = synthetic_bin_population / original_bin_population
@@ -62,14 +62,18 @@ class SkewedSmoter:
                 over_sampler = OverSampler(self.data, index, percentage=rate, perturbation=0.02, nk=5, verbose=True)
                 synth = over_sampler.generate_synthetic_data()
                 if synth is None or len(synth) == 0:
-                    self._logger.info(f"Generated {len(synth)} synthetic samples for bin {i}")
+                    self._logger.info(f"Generated 0 synthetic samples for bin {i}")
                     continue
                 synth = pd.concat([self.data.iloc[index, :], synth])
 
             else:
+
                 # Undersample the bin
                 under_sampler = UnderSampler(self.data, index, method= "cluster", percentage=rate, seed=None)
                 synth = under_sampler.provide_under_sampled_data()
+                if synth is None or len(synth) == 0:
+                    self._logger.info(f"No samples selected for bin {i}")
+                    continue
 
             synthetic_data = pd.concat([synthetic_data, synth])
 
