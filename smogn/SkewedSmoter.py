@@ -64,7 +64,7 @@ class SkewedSmoter:
                 if synth is None or len(synth) == 0:
                     self._logger.info(f"Generated {len(synth)} synthetic samples for bin {i}")
                     continue
-                synth = pd.concat([self.data.iloc[index, :].copy(deep=True), synth])
+                synth = pd.concat([self.data.iloc[index, :], synth])
 
             else:
                 # Undersample the bin
