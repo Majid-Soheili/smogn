@@ -14,8 +14,10 @@ class TestSkewedSmoter(unittest.TestCase):
         self.sample_data = pd.DataFrame({
             'feature1': np.random.uniform(0, 1, 100),
             'feature2': np.random.uniform(0, 1, 100),
+            'feature3': pd.Categorical(np.random.randint(1, 13, 100)),
             'target': np.random.lognormal(mean=1.0, sigma=0.5, size=100)  # Adjust mean and sigma as needed
         })
+        self.sample_data['feature3'] = self.sample_data['feature3'].astype('category')
         self.target_column = 'target'
         self.smoter = SkewedSmoter(data=self.sample_data, target=self.target_column)
 
@@ -27,7 +29,7 @@ class TestSkewedSmoter(unittest.TestCase):
         self.assertEqual(self.smoter.get_steepness(), 1)
         self.assertEqual(self.smoter.get_skewness(), 0.3)
         self.assertEqual(self.smoter.get_focus(), None)
-        self.assertEqual(self.smoter.bins.size, 37)
+        self.assertEqual(self.smoter.bins.size, 25)
 
     def test_skewed_distribution_sum(self):
         # Test if the skewed distribution sums to 1
@@ -162,6 +164,12 @@ class TestSkewedSmoter(unittest.TestCase):
         expected_bins = 17
         self.assertEqual(len(self.smoter.bins), expected_bins)
 
+    def test_synthetic_dtype(self):
+        # Test if the synthetic data types match the original data types
+        self.smoter.set_focus(1)
+        synth = self.smoter.generate_synthetic_data()
+        self.assertTrue(synth.dtypes.equals(self.sample_data.dtypes))
+
     def test_set_target_updates_bins(self):
         # Test if setting a new target updates the number of bins correctly
         new_data = pd.DataFrame({
@@ -170,7 +178,7 @@ class TestSkewedSmoter(unittest.TestCase):
             'new_target': np.random.uniform(0, 8, 50)  # Continuous target in [0,8]
         })
         self.smoter.set_data(new_data).set_target('new_target')
-        expected_bins = 37
+        expected_bins = 25
         self.assertEqual(len(self.smoter.bins), expected_bins)
 
     def test_data_balancing(self):
