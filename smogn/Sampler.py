@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import random
 import logging
+from scipy.spatial.distance import cdist
+from sklearn.metrics import pairwise_distances
 
 from tqdm import tqdm
 from smogn.Schema import Schema
@@ -61,48 +63,42 @@ class Sampler:
 
         self._logger.info("Computing the distance matrix...")
 
-        data_num_array = self._original_data[self._schema.numerical_columns].to_numpy()
-        data_nom_array = self._original_data[self._schema.nominal_columns].to_numpy()
-        range_num = self._schema.column_range_values[self._schema.numerical_columns_mask]
+        # Extract numerical and nominal data as NumPy arrays
+        data_num_array = self._original_data[self._schema.numerical_columns].to_numpy(dtype=np.float32)
+        data_nom_array = self._original_data[self._schema.nominal_columns].to_numpy(dtype=np.float32)
+        range_num = self._schema.column_range_values[self._schema.numerical_columns_mask].astype(np.float32)
 
+        # Handle zero ranges to prevent division by zero
         if self._schema.numerical_columns_count > 0 and np.any(range_num == 0):
             index = np.where(range_num == 0)[0]
             cname = self._schema.column_names[index]
-            logging.warning(f"Warning: ranges_num contains zero values at indices {index} - {cname}.")
-            range_num += 1e-8  # Add a small value to avoid division by zero
+            logging.warning(f"Warning: range_num contains zero values at indices {index} - {cname}.")
+            range_num[index] += 1e-8  # Add a small value to avoid division by zero
 
-
-        # The number of constant columns is not important for the distance computation
+        # Compute distance matrix based on feature types
         if self._schema.numerical_columns_count > 0 and self._schema.nominal_columns_count == 0:
             # Case 1: All features are numeric
-            # Compute Euclidean distance using vectorized operations
-            diff_num = (data_num_array[:, np.newaxis, :] - data_num_array[np.newaxis, :, :]) / range_num  # Normalize differences
-            diff_num **= 2  # Square differences
-            sum_diff_num = np.sum(diff_num, axis=2)
-            self._distance_matrix = np.sqrt(sum_diff_num)
+            scaled_num = data_num_array / range_num
+            self._distance_matrix = cdist(scaled_num, scaled_num, metric='euclidean').astype(np.float32)
 
         elif self._schema.nominal_columns_count > 0 and self._schema.numerical_columns_count == 0:
             # Case 2: All features are nominal
-            # Compute Hamming distance using vectorized operations
-            diff_nom = data_nom_array[:, np.newaxis, :] != data_nom_array[np.newaxis, :, :]
-            self._distance_matrix = np.sum(diff_nom, axis=2).astype(float)
+            # Hamming distance returns a value between 0 and 1; multiply by number of nominal features to get count
+            self._distance_matrix = pairwise_distances(data_nom_array, metric='hamming').astype(np.float32)
+            self._distance_matrix *= self._schema.nominal_columns_count
 
         elif self._schema.numerical_columns_count > 0 and self._schema.nominal_columns_count > 0:
             # Case 3: Mixed features (both numeric and nominal)
-            # Numeric part
-            diff_num = (data_num_array[:, np.newaxis, :] - data_num_array[np.newaxis, :, :]) / range_num  # Normalize differences
+            # Compute numerical distance
+            scaled_num = data_num_array / range_num
+            distance_num = cdist(scaled_num, scaled_num, metric='euclidean').astype(np.float32) ** 2
 
-            diff_num **= 2  # Square differences
-            sum_diff_num = np.sum(diff_num, axis=2)
+            # Compute nominal distance
+            distance_nom = pairwise_distances(data_nom_array, metric='hamming').astype(np.float32)
+            distance_nom *= self._schema.nominal_columns_count
 
-            # Nominal part
-            diff_nom = data_nom_array[:, np.newaxis, :] != data_nom_array[np.newaxis, :, :]
-            # diff_nom = diff_nom.astype(float)
-            diff_nom = np.where(diff_nom, 1.0, 0.0)
-            sum_diff_nom = np.sum(diff_nom, axis=2)
-
-            # Combine numeric and nominal distances
-            self._distance_matrix = np.sqrt(sum_diff_num + sum_diff_nom)
+            # Combine numerical and nominal distances
+            self._distance_matrix = np.sqrt(distance_num + distance_nom)
         else:
             # No features present
             self._distance_matrix = None
