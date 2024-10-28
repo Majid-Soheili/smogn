@@ -160,6 +160,7 @@ class SkewedSmoter:
         if n_duplicates > 0:
             self._logger.warning(f"Removing {n_duplicates} duplicated rows")
         self.data = self.data.drop_duplicates()
+        self.data.reset_index(drop=True, inplace=True)
         return self
 
     # a function to put target column in the last column
