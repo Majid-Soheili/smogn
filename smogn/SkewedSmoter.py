@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import pandas as pd
 import logging
+import matplotlib.pyplot as plt
 from smogn.OverSampler import OverSampler
 from smogn.UnderSampler import UnderSampler
 
@@ -218,3 +219,11 @@ class SkewedSmoter:
     def set_under_method(self, method):
         self.under_method = method
         return self
+
+    def get_plot(self):
+        plt.figure(figsize=(10, 6))
+        plt.hist(self.data[self.target], bins=self.bins, alpha=0.5, label='Before')
+        plt.hist(self.synthetic_data[self.target], bins=self.bins, alpha=0.5, label='After')
+        plt.legend()
+        plt.title('Before and After')
+        return plt
