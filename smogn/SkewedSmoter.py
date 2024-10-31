@@ -221,10 +221,10 @@ class SkewedSmoter:
         return self
 
     def get_plot(self):
-        title = f"SkewedSmoter: {self.target}, before and after histogram {self.focus} - {self.skewness} - {self.steepness}"
+        title = f"SkewedSmoter: {self.target}, before and after sampling, {self.focus} - {self.skewness} - {self.steepness}"
         plt.figure(figsize=(10, 6))
         plt.hist(self.data[self.target], bins=self.bins, alpha=0.5, label='Before')
         plt.hist(self.synthetic_data[self.target], bins=self.bins, alpha=0.5, label='After')
         plt.legend()
-        plt.title('Before and After')
+        plt.title(title)
         return plt
