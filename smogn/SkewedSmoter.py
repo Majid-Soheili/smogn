@@ -110,7 +110,7 @@ class SkewedSmoter:
         # Generate the population distribution based on the skewed function
         weights = self.skewed_distribution()
         population = self.data.shape[0]
-        population_distribution = (weights * population).astype(int)
+        population_distribution = (weights * population).round().astype(int)
         self.synth_bins_populations = population_distribution
 
     # Private Methods ===============================================
@@ -172,6 +172,7 @@ class SkewedSmoter:
         return self
 
    # Public Getters and Setters ========================================
+
     def get_original_data(self):
         return self.data
     def get_synthetic_data(self):
@@ -211,6 +212,7 @@ class SkewedSmoter:
 
     def set_bin_width(self, bin_width):
         self.bin_width = bin_width
+        self._calculate_bins()
         return self
 
     def set_under_method(self, method):
