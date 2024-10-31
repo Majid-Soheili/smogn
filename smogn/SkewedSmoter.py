@@ -154,7 +154,7 @@ class SkewedSmoter:
         max_value = self.data[self.target].max()
         max_value = int(round(max_value, 0))
         step = self.bin_width
-        self.bins = np.arange(min_value, max_value + step, step)
+        self.bins = np.arange(min_value, max_value + step, step).astype(np.float32)
 
     def _remove_duplicated_rows(self):
         n_duplicates = self.data.duplicated().sum()
@@ -209,6 +209,7 @@ class SkewedSmoter:
 
     def set_focus(self, focus):
         self.focus = focus
+        self.focus = np.float32(focus)
         return self
 
     def set_bin_width(self, bin_width):
